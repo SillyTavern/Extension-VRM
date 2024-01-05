@@ -63,12 +63,16 @@
                         <div>
                             <div class="vrm-model-select-div">
                                 <div id="vrm_model_refresh_button" class="menu_button">
-                                    <i class="fa-solid fa-refresh"></i>
+                                    <i class="fa-solid fa-refresh" title="Refresh model list"></i>
                                     <!-- Refresh -->
                                 </div>
                                 <select id="vrm_model_select">
                                     <!-- Populated by JS -->
                                 </select>
+                                <div id="vrm_model_reset_button" class="menu_button">
+                                    <i class="fa-solid fa-recycle" title="Restore default settings"></i>
+                                    <!-- Refresh -->
+                                </div>
                             </div>
                             <small>
                                 Click refresh button to reload models list and unload current model.
@@ -76,6 +80,41 @@
                         </div>
                     </div>
                 </div>
+                <div id="vrm_model_settings">
+                    <div>
+                        <h4>Model Animations</h4>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            Default Animations
+                        </div>
+                        <div class="vrm_expression_select_div" class="vrm-select-div">
+                            <div class="vrm-select-div">
+                                <select id="vrm_default_expression_select">
+                                </select>
+                                <div id="vrm_default_expression_replay" class="vrm_replay_button menu_button">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                                </div>
+                            </div>
+                            <div class="vrm-select-div">
+                                <select id="vrm_default_motion_select">
+                                </select>
+                                <div id="vrm_default_motion_replay" class="vrm_replay_button menu_button">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                                </div>
+                            </div>
+                            <small>
+                                Played when classified expression has no mapping set.
+                            </small>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>Classified expressions mapping</h4>
+                    </div>
+                    <div id="vrm_expression_mapping">
+                    </div>
+                </div>
             </div>
+        </div>
     </div>
 </div>

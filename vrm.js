@@ -4,21 +4,39 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { loadMixamoAnimation } from './loadMixamoAnimation.js';
 
-import { MODULE_NAME, DEBUG_PREFIX, VRM_CANVAS_ID } from "./constants.js";
-import { extension_settings } from '../../../extensions.js';
+import { getRequestHeaders, saveSettings, saveSettingsDebounced, sendMessageAsUser } from '../../../../script.js';
+import { getContext, extension_settings, getApiUrl, doExtrasFetch, modules } from '../../../extensions.js';
+
+import {
+    MODULE_NAME,
+    DEBUG_PREFIX,
+    VRM_CANVAS_ID,
+    FALLBACK_EXPRESSION
+} from "./constants.js";
 
 import { currentChatMembers } from './utils.js';
-import { delay } from '../../../utils.js';
+import {
+    delay,
+    trimToEndSentence,
+    trimToStartSentence } from '../../../utils.js';
+import { expression } from './lib/jsm/nodes/Nodes.js';
 
 export {
-    loadVRM
+    loadVRM,
+    currentVRM,
+    currentMotion,
+    setExpression,
+    setMotion,
+    updateExpression
 }
 
 
 // gltf and vrm
-let currentVrm = undefined;
+let currentVRM = undefined;
 let currentAnimation = undefined;
 let currentMixer = undefined;
+let currentExpression = "neutral";
+let currentMotion = undefined;
 
 const clock = new THREE.Clock();
 
@@ -28,7 +46,9 @@ currentAnimation = 'assets/vrm/animation/Breathing Idle.fbx';
 async function loadVRM() {
     
     currentMixer = undefined;
-    currentVrm = undefined;
+    currentVRM = undefined;
+    currentExpression = "neutral";
+    currentMotion = undefined;
 
     // Delete the canvas
     if (document.getElementById(VRM_CANVAS_ID) !== null)
@@ -82,7 +102,7 @@ async function loadVRM() {
         const model_path = extension_settings.vrm.character_model_mapping[current_characters[0]];
         console.debug(DEBUG_PREFIX,"Loading VRM model",model_path);
 
-        loader.load(
+        await loader.load(
             model_path,
             // called when the resource is loaded
             ( gltf ) => {
@@ -98,7 +118,7 @@ async function loadVRM() {
                     obj.frustumCulled = false;
                 } );
 
-                currentVrm = vrm;
+                currentVRM = vrm;
                 if (extension_settings.vrm.follow_cursor)
                     vrm.lookAt.target = lookAtTarget;
                 //console.log( vrm );
@@ -107,8 +127,62 @@ async function loadVRM() {
                 // rotate if the VRM is VRM0.0
 			    VRMUtils.rotateVRM0(vrm);
 
-                if (currentAnimation)
-                    loadFBX( currentAnimation );
+                // helpers
+                if (extension_settings.vrm.show_grid) {
+                    const gridHelper = new THREE.GridHelper( 10, 10 );
+                    scene.add( gridHelper );
+
+                    const axesHelper = new THREE.AxesHelper( 5 );
+                    scene.add( axesHelper );
+                }
+
+                // animate
+                clock.start();
+                
+                function animate() {
+
+                    requestAnimationFrame( animate );
+                    
+                    const deltaTime = clock.getDelta();
+                    
+                    // if animation is loaded
+                    if ( currentMixer ) {
+                        // update the animation
+                        currentMixer.update( deltaTime );
+                    }
+                    
+                    if ( currentVRM ) {
+                        currentVRM.update( deltaTime );
+                        //console.debug(DEBUG_PREFIX,currentVRM);
+                    }
+                    renderer.render( scene, camera );
+                }
+
+                animate();
+
+                // mouse listener
+                window.addEventListener( 'mousemove', ( event ) => {
+                    lookAtTarget.position.x = 10.0 * ( ( event.clientX - 0.5 * window.innerWidth ) / window.innerHeight );
+                    lookAtTarget.position.y = - 10.0 * ( ( event.clientY - 0.5 * window.innerHeight ) / window.innerHeight );
+                } );
+
+                const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
+                const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
+
+                if (expression !== undefined && expression != "none") {
+                    console.debug(DEBUG_PREFIX,"Set default expression to",expression);
+                    setExpression(expression);
+                }
+                if (motion !== undefined && motion != "none") {
+                    console.debug(DEBUG_PREFIX,"Set default motion to",motion);
+                    setMotion(motion);
+                }
+
+                setExpression(currentExpression);
+                setMotion(currentMotion);
+            
+
+                console.debug(DEBUG_PREFIX,"VRM scene fully loaded");
 
             },
             // called while loading is progressing
@@ -117,46 +191,6 @@ async function loadVRM() {
             ( error ) => console.error( error )
         );
     }
-
-    // helpers
-    if (extension_settings.vrm.show_grid) {
-        const gridHelper = new THREE.GridHelper( 10, 10 );
-        scene.add( gridHelper );
-
-        const axesHelper = new THREE.AxesHelper( 5 );
-        scene.add( axesHelper );
-    }
-
-    // animate
-    clock.start();
-    
-    function animate() {
-
-        requestAnimationFrame( animate );
-        
-        const deltaTime = clock.getDelta();
-        
-        // if animation is loaded
-        if ( currentMixer ) {
-            // update the animation
-            currentMixer.update( deltaTime );
-        }
-        
-        if ( currentVrm ) {
-            currentVrm.update( deltaTime );
-            currentVrm.expressionManager.setValue("neutral",1.0)
-            //console.debug(DEBUG_PREFIX,currentVrm);
-        }
-        renderer.render( scene, camera );
-    }
-
-    animate();
-
-    // mouse listener
-    window.addEventListener( 'mousemove', ( event ) => {
-        lookAtTarget.position.x = 10.0 * ( ( event.clientX - 0.5 * window.innerWidth ) / window.innerHeight );
-        lookAtTarget.position.y = - 10.0 * ( ( event.clientY - 0.5 * window.innerHeight ) / window.innerHeight );
-    } );
 }
 
 // mixamo animation
@@ -165,13 +199,159 @@ function loadFBX( animationUrl ) {
 	currentAnimation = animationUrl;
 
 	// create AnimationMixer for VRM
-	currentMixer = new THREE.AnimationMixer( currentVrm.scene );
+	currentMixer = new THREE.AnimationMixer( currentVRM.scene );
 
 	// Load animation
-	loadMixamoAnimation( animationUrl, currentVrm ).then( ( clip ) => {
+	loadMixamoAnimation( animationUrl, currentVRM ).then( ( clip ) => {
 		// Apply the loaded animation to mixer and play
 		currentMixer.timeScale = 1.0;
 		currentMixer.clipAction( clip ).play();
 	} );
 
+}
+
+async function setExpression( value ) {
+    while (currentVRM === undefined)
+        delay(100);
+
+    console.debug(DEBUG_PREFIX,"Switch expression from",currentExpression,"to",value);
+    
+    if (value == "none")
+        value = "neutral";
+
+    currentVRM.expressionManager.setValue(currentExpression, 0.0);
+    currentExpression = value;
+    currentVRM.expressionManager.setValue(currentExpression, 1.0);
+}
+
+async function setMotion( value ) {
+    while (currentVRM === undefined)
+        delay(100);
+
+    console.debug(DEBUG_PREFIX,"Switch motion from",currentMotion,"to",value);
+
+    if (value == "none" && currentMixer !== undefined)
+        currentMixer.timeScale = 0;
+
+    if (currentMotion != value) {
+        currentMotion = value;
+        loadFBX(currentMotion);
+    }
+}
+
+async function updateExpression(chat_id) {
+    const message = getContext().chat[chat_id];
+    const character = message.name;
+    const model_path = extension_settings.vrm.character_model_mapping[character];
+
+    console.debug(DEBUG_PREFIX,'received new message :', message.mes);
+
+    if (message.is_user)
+        return;
+
+    if (model_path === undefined) {
+        console.debug(DEBUG_PREFIX, 'No model assigned to', character);
+        return;
+    }
+
+    const expression = await getExpressionLabel(message.mes);
+    let model_expression = extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression]['expression'];
+    let model_motion = extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression]['motion'];
+
+    console.debug(DEBUG_PREFIX,'Detected expression in message:',expression);
+
+    // Fallback animations
+    if (model_expression == 'none') {
+        console.debug(DEBUG_PREFIX,'Expression is none, applying default expression', model_expression);
+        model_expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
+    }
+
+    if (model_motion == 'none') {
+        console.debug(DEBUG_PREFIX,'Motion is none, playing default motion',model_motion);
+        model_motion = extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
+    }
+
+    console.debug(DEBUG_PREFIX,'Playing expression',expression,':', model_expression, model_motion);
+
+    if (model_expression != 'none') {
+        setExpression(model_expression);
+    }
+
+    if (model_motion != 'none') {
+        setMotion(model_motion);
+    }
+}
+
+async function getExpressionLabel(text) {
+    // Return if text is undefined, saving a costly fetch request
+    if ((!modules.includes('classify') && !extension_settings.expressions.local) || !text) {
+        return FALLBACK_EXPRESSION;
+    }
+
+    text = sampleClassifyText(text);
+
+    try {
+        if (extension_settings.expressions.local) {
+            // Local transformers pipeline
+            const apiResult = await fetch('/api/extra/classify', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ text: text }),
+            });
+
+            if (apiResult.ok) {
+                const data = await apiResult.json();
+                return data.classification[0].label;
+            }
+        } else {
+            // Extras
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/classify';
+
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify({ text: text }),
+            });
+
+            if (apiResult.ok) {
+                const data = await apiResult.json();
+                return data.classification[0].label;
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        return FALLBACK_EXPRESSION;
+    }
+}
+
+/**
+ * Processes the classification text to reduce the amount of text sent to the API.
+ * Quotes and asterisks are to be removed. If the text is less than 300 characters, it is returned as is.
+ * If the text is more than 300 characters, the first and last 150 characters are returned.
+ * The result is trimmed to the end of sentence.
+ * @param {string} text The text to process.
+ * @returns {string}
+ */
+function sampleClassifyText(text) {
+    if (!text) {
+        return text;
+    }
+
+    // Remove asterisks and quotes
+    let result = text.replace(/[\*\"]/g, '');
+
+    const SAMPLE_THRESHOLD = 300;
+    const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;
+
+    if (text.length < SAMPLE_THRESHOLD) {
+        result = trimToEndSentence(result);
+    } else {
+        result = trimToEndSentence(result.slice(0, HALF_SAMPLE_THRESHOLD)) + ' ' + trimToStartSentence(result.slice(-HALF_SAMPLE_THRESHOLD));
+    }
+
+    return result.trim();
 }

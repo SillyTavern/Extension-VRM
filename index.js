@@ -2,20 +2,22 @@
 DONE:
 - Running example into ST: load model/animation
 - Organize code into clean part
-- basic ui enable/disable, show grid, follow cursor
+- basic ui enable/disable, show grid, follow cursor, reset scene
 - Character/model select
+- expression/animation select default/classify message
+- model reset settings button
 
 TODO:
-- animation select
-- Extract expression list / show in ui
-- Inject import map from the extension
 - group support
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
 export { MODULE_NAME };
 import { MODULE_NAME, DEBUG_PREFIX, VRM_CANVAS_ID } from "./constants.js";
-import { loadVRM } from "./vrm.js";
+import {
+    loadVRM,
+    updateExpression
+} from "./vrm.js";
 import {
     onEnabledClick,
     onFollowCursorClick,
@@ -28,7 +30,11 @@ import {
     updateCharactersModels,
     onModelRefreshClick,
     onModelChange,
+    onModelResetClick,
+    onAnimationMappingChange
 } from "./ui.js";
+
+import { currentChatMembers } from "./utils.js";
 
 const UPDATE_INTERVAL = 100;
 const extensionFolderPath = `scripts/extensions/third-party/Extension-VRM`;
@@ -47,7 +53,7 @@ const defaultSettings = {
 
     // Character model mapping
     character_model_mapping: {},
-    character_models_settings: {},
+    model_settings: {},
 }
 
 //'assets/vrm/VRM1_Constraint_Twist_Sample.vrm'
@@ -71,6 +77,15 @@ function loadSettings() {
 
     $('#vrm_model_refresh_button').on('click', onModelRefreshClick);
     $('#vrm_model_select').on('change', onModelChange);
+    $('#vrm_model_reset_button').on('click', onModelResetClick);
+
+    $('#vrm_default_expression_select').on('change', () => {onAnimationMappingChange('animation_default');});
+    $('#vrm_default_motion_select').on('change', () => {onAnimationMappingChange('animation_default');});
+    $('#vrm_default_expression_replay').on('click', () => {onAnimationMappingChange('animation_default');});
+    $('#vrm_default_motion_replay').on('click', () => {onAnimationMappingChange('animation_default');});
+
+    // Events
+    window.addEventListener('resize', () => {loadVRM(); console.debug(DEBUG_PREFIX,'Window resized, reloading VRM');});
 
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersList);
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersModels);
@@ -79,7 +94,7 @@ function loadSettings() {
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersList);
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersModels);
 
-    //eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => updateExpression(chat_id));
+    eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => updateExpression(chat_id));
 
     updateCharactersListOnce();
     updateCharactersModels();
