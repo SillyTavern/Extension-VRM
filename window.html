@@ -1,0 +1,81 @@
+<div id="vrm_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>VRM</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div>
+                <div>
+                    <div>
+                        <h4>Global Settings</h4>
+                    </div>
+                    <label class="checkbox_label" for="vrm_enabled_checkbox">
+                        <input type="checkbox" id="vrm_enabled_checkbox" name="vrm_enabled_checkbox">
+                        <small>Enabled</small>
+                    </label>
+                    <label class="checkbox_label" for="vrm_follow_cursor_checkbox">
+                        <input type="checkbox" id="vrm_follow_cursor_checkbox" name="vrm_follow_cursor_checkbox">
+                        <small>Follow cursor</small>
+                    </label>
+                    <div>
+                        <h4>Debug Settings</h4>
+                    </div>
+                    <label class="checkbox_label" for="vrm_show_grid_checkbox">
+                        <input type="checkbox" id="vrm_show_grid_checkbox" name="vrm_show_grid_checkbox">
+                        <small>Show grid</small>
+                    </label>
+                    <label class="checkbox_label" for="vrm_reload_button">
+                        <div id="vrm_reload_button" class="menu_button">
+                            <i class="fa fa-refresh" aria-hidden="true"></i>
+                            <!-- Reset button -->
+                        </div>
+                        <small>Click to reload all VRM models (debug)</small>
+                    </label>
+                </div>
+                <div>
+                    <div>
+                        <h4>Model Mapping</h4>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_character_select">Character:</label>
+                        </div>
+                        <div>
+                            <div class="vrm-character-select-div">
+                                <div id="vrm_character_refresh_button" class="menu_button">
+                                    <i class="fa-solid fa-refresh"></i>
+                                    <!-- Refresh -->
+                                </div>
+                                <select id="vrm_character_select">
+                                    <!-- Populated by JS -->
+                                </select>
+                                <div id="vrm_character_remove_button" class="menu_button">
+                                    Remove
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="vrm_model_div" class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_model_select">VRM Model:</label>
+                        </div>
+                        <div>
+                            <div class="vrm-model-select-div">
+                                <div id="vrm_model_refresh_button" class="menu_button">
+                                    <i class="fa-solid fa-refresh"></i>
+                                    <!-- Refresh -->
+                                </div>
+                                <select id="vrm_model_select">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <small>
+                                Click refresh button to reload models list and unload current model.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+</div>
