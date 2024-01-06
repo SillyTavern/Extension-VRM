@@ -40,9 +40,6 @@ let currentMotion = undefined;
 
 const clock = new THREE.Clock();
 
-// DBG
-currentAnimation = 'assets/vrm/animation/Breathing Idle.fbx';
-
 async function loadVRM() {
     
     currentMixer = undefined;
@@ -59,7 +56,7 @@ async function loadVRM() {
     }
 
     // renderer
-    const renderer = new THREE.WebGLRenderer({ antialias : true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias : true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setPixelRatio( window.devicePixelRatio );
     document.body.appendChild( renderer.domElement );
@@ -184,35 +181,7 @@ async function loadVRM() {
                 setExpression(currentExpression);
                 setMotion(currentMotion);
 
-                // Blink
-                function blink() {
-                    var blinktimeout = Math.floor(Math.random() * 250) + 50;
-                    lookAtTarget.position.y = camera.position.y - camera.position.y * 2 + 1.25;
-
-                    setTimeout(() => {
-                        if (currentVRM) {
-                            currentVRM.expressionManager.setValue("blink",0);
-                            console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
-                        }
-                    }, blinktimeout);
-                    
-                    if (currentVRM) {
-                        currentVRM.expressionManager.setValue("blink",1);
-                    }
-                }
-
-                // loop blink timing
-                function loop() {
-                    var rand = Math.round(Math.random() * 10000) + 1000;
-                    setTimeout(function () {
-                    blink();
-                    if (currentVRM)
-                        loop();
-                    }, rand);
-                }
-
-                loop();
-            
+                blink();
 
                 console.debug(DEBUG_PREFIX,"VRM scene fully loaded");
 
@@ -386,4 +355,25 @@ function sampleClassifyText(text) {
     }
 
     return result.trim();
+}
+
+// Blink
+function blink() {
+    var blinktimeout = Math.floor(Math.random() * 250) + 50;
+    setTimeout(() => {
+        if (currentVRM) {
+            currentVRM.expressionManager.setValue("blink",0);
+            //console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
+        }
+    }, blinktimeout);
+    
+    if (currentVRM) {
+        currentVRM.expressionManager.setValue("blink",1);
+    }
+
+    var rand = Math.round(Math.random() * 10000) + 1000;
+    setTimeout(function () {
+        if (currentVRM)
+            blink();
+    }, rand);
 }

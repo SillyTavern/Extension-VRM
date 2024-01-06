@@ -7,8 +7,11 @@ DONE:
 - expression/animation select default/classify message
 - model reset settings button
 - blinking auto (basic)
+- transparent background
 
 TODO:
+- add st command for expression/animation
+- default setting using expression name
 - mouth movement
 - blink smooth
 - loader for vrma ?
