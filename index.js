@@ -8,6 +8,7 @@ DONE:
 - model reset settings button
 - blinking auto (basic)
 - transparent background
+- slash command expression/motion
 
 TODO:
 - add st command for expression/animation
@@ -43,7 +44,8 @@ import {
     onModelRefreshClick,
     onModelChange,
     onModelResetClick,
-    onAnimationMappingChange
+    onAnimationMappingChange,
+    animations_files
 } from "./ui.js";
 
 import { currentChatMembers } from "./utils.js";
@@ -177,8 +179,17 @@ async function setMotionSlashCommand(_, motion) {
     }
 
     motion = motion.trim();
-
     console.debug(DEBUG_PREFIX,'Command motion received for', motion);
 
-    await setMotion(motion);
+    const fuse = new Fuse(animations_files);
+    const results = fuse.search(motion);
+    const fileItem = results[0]?.item;
+
+    if (fileItem)
+    {
+        await setMotion(fileItem);
+    }
+    else{
+        console.debug(DEBUG_PREFIX,'Motion not found in', animations_files);
+    }
 }

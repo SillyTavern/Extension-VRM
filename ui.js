@@ -35,7 +35,8 @@ export {
     onModelRefreshClick,
     onModelChange,
     onModelResetClick,
-    onAnimationMappingChange
+    onAnimationMappingChange,
+    animations_files
 };
 
 let characters_list = [];
