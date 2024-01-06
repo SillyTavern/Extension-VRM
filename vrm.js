@@ -59,7 +59,7 @@ async function loadVRM() {
     }
 
     // renderer
-    const renderer = new THREE.WebGLRenderer();
+    const renderer = new THREE.WebGLRenderer({ antialias : true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setPixelRatio( window.devicePixelRatio );
     document.body.appendChild( renderer.domElement );
@@ -152,6 +152,9 @@ async function loadVRM() {
                     }
                     
                     if ( currentVRM ) {
+                        const s = 0.01 * Math.PI * Math.sin(Math.PI * clock.elapsedTime);
+                        //blink();
+                        //currentVRM.humanoid.getNormalizedBoneNode('neck').rotation.y = s;
                         currentVRM.update( deltaTime );
                         //console.debug(DEBUG_PREFIX,currentVRM);
                     }
@@ -180,6 +183,35 @@ async function loadVRM() {
 
                 setExpression(currentExpression);
                 setMotion(currentMotion);
+
+                // Blink
+                function blink() {
+                    var blinktimeout = Math.floor(Math.random() * 250) + 50;
+                    lookAtTarget.position.y = camera.position.y - camera.position.y * 2 + 1.25;
+
+                    setTimeout(() => {
+                        if (currentVRM) {
+                            currentVRM.expressionManager.setValue("blink",0);
+                            console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
+                        }
+                    }, blinktimeout);
+                    
+                    if (currentVRM) {
+                        currentVRM.expressionManager.setValue("blink",1);
+                    }
+                }
+
+                // loop blink timing
+                function loop() {
+                    var rand = Math.round(Math.random() * 10000) + 1000;
+                    setTimeout(function () {
+                    blink();
+                    if (currentVRM)
+                        loop();
+                    }, rand);
+                }
+
+                loop();
             
 
                 console.debug(DEBUG_PREFIX,"VRM scene fully loaded");

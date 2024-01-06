@@ -6,9 +6,15 @@ DONE:
 - Character/model select
 - expression/animation select default/classify message
 - model reset settings button
+- blinking auto (basic)
 
 TODO:
+- mouth movement
+- blink smooth
+- loader for vrma ?
 - group support
+
+
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
