@@ -116,7 +116,7 @@ async function loadVRM() {
                 } );
 
                 currentVRM = vrm;
-                if (extension_settings.vrm.follow_cursor)
+                if (extension_settings.vrm.follow_camera)
                     vrm.lookAt.target = lookAtTarget;
                 //console.log( vrm );
                 scene.add( vrm.scene );
@@ -160,11 +160,8 @@ async function loadVRM() {
 
                 animate();
 
-                // mouse listener
-                window.addEventListener( 'mousemove', ( event ) => {
-                    lookAtTarget.position.x = 10.0 * ( ( event.clientX - 0.5 * window.innerWidth ) / window.innerHeight );
-                    lookAtTarget.position.y = - 10.0 * ( ( event.clientY - 0.5 * window.innerHeight ) / window.innerHeight );
-                } );
+                lookAtTarget.position.x = camera.position.x;
+                lookAtTarget.position.y = ((camera.position.y-camera.position.y-camera.position.y)/2)+0.5;
 
                 const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
                 const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
@@ -236,6 +233,7 @@ async function setMotion( value ) {
 
     if (currentMotion != value) {
         currentMotion = value;
+        console.debug(DEBUG_PREFIX,"Loading fbx file");
         loadFBX(currentMotion);
     }
 }
@@ -360,15 +358,19 @@ function sampleClassifyText(text) {
 // Blink
 function blink() {
     var blinktimeout = Math.floor(Math.random() * 250) + 50;
+    
+    const current_blink = currentVRM.expressionManager.getValue("blinkLeft");
+    console.debug(DEBUG_PREFIX, "TEST", current_blink)
     setTimeout(() => {
         if (currentVRM) {
-            currentVRM.expressionManager.setValue("blink",0);
+            currentVRM.expressionManager.setValue("blink",current_blink);
             //console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
         }
     }, blinktimeout);
     
     if (currentVRM) {
-        currentVRM.expressionManager.setValue("blink",1);
+        currentVRM.expressionManager.setValue("blink",1.0-current_blink);
+        currentVRM.expressionManager.setValue(currentExpression,1);
     }
 
     var rand = Math.round(Math.random() * 10000) + 1000;

@@ -50,7 +50,7 @@ async function onEnabledClick() {
 }
 
 async function onFollowCursorClick() {
-    extension_settings.vrm.follow_cursor = $('#vrm_follow_cursor_checkbox').is(':checked');
+    extension_settings.vrm.follow_camera = $('#vrm_follow_camera_checkbox').is(':checked');
     saveSettingsDebounced();
 
     await loadVRM();
