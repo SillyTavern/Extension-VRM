@@ -209,23 +209,19 @@ function loadFBX( animationUrl ) {
 }
 
 async function setExpression( value ) {
-    while (currentVRM === undefined)
-        delay(100);
-
     console.debug(DEBUG_PREFIX,"Switch expression from",currentExpression,"to",value);
     
     if (value == "none")
         value = "neutral";
 
-    currentVRM.expressionManager.setValue(currentExpression, 0.0);
+    if (currentVRM)
+        currentVRM.expressionManager.setValue(currentExpression, 0.0);
     currentExpression = value;
-    currentVRM.expressionManager.setValue(currentExpression, 1.0);
+    if (currentVRM)
+        currentVRM.expressionManager.setValue(currentExpression, 1.0);
 }
 
 async function setMotion( value ) {
-    while (currentVRM === undefined)
-        delay(100);
-
     console.debug(DEBUG_PREFIX,"Switch motion from",currentMotion,"to",value);
 
     if (value == "none" && currentMixer !== undefined)
@@ -234,7 +230,8 @@ async function setMotion( value ) {
     if (currentMotion != value) {
         currentMotion = value;
         console.debug(DEBUG_PREFIX,"Loading fbx file");
-        loadFBX(currentMotion);
+        if (currentVRM)
+            loadFBX(currentMotion);
     }
 }
 
@@ -272,11 +269,11 @@ async function updateExpression(chat_id) {
 
     console.debug(DEBUG_PREFIX,'Playing expression',expression,':', model_expression, model_motion);
 
-    if (model_expression != 'none') {
+    if (model_expression != 'none' && currentVRM !== undefined) {
         setExpression(model_expression);
     }
 
-    if (model_motion != 'none') {
+    if (model_motion != 'none' && currentVRM !== undefined) {
         setMotion(model_motion);
     }
 }

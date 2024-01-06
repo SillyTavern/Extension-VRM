@@ -11,14 +11,12 @@ DONE:
 - slash command expression/motion
 
 TODO:
-- add st command for expression/animation
 - default setting using expression name
 - mouth movement
 - blink smooth and adapt to current expression?
 - loader for vrma ?
 - group support
-
-
+- other kind of camera
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
