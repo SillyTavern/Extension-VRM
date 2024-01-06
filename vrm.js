@@ -37,8 +37,10 @@ let currentAnimation = undefined;
 let currentMixer = undefined;
 let currentExpression = "neutral";
 let currentMotion = undefined;
+let currentInstanceId = 0;
 
 const clock = new THREE.Clock();
+clock.start();
 
 async function loadVRM() {
     
@@ -46,6 +48,7 @@ async function loadVRM() {
     currentVRM = undefined;
     currentExpression = "neutral";
     currentMotion = undefined;
+    currentInstanceId++;
 
     // Delete the canvas
     if (document.getElementById(VRM_CANVAS_ID) !== null)
@@ -134,8 +137,6 @@ async function loadVRM() {
                 }
 
                 // animate
-                clock.start();
-                
                 function animate() {
 
                     requestAnimationFrame( animate );
@@ -178,13 +179,27 @@ async function loadVRM() {
                 setExpression(currentExpression);
                 setMotion(currentMotion);
 
-                blink();
+                blink(currentVRM, currentInstanceId);
+
+                // handle window resizes
+                window.addEventListener( 'resize', onWindowResize, false );
+
+                function onWindowResize(){
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+
+                    renderer.setSize( window.innerWidth, window.innerHeight );
+                }
 
                 console.debug(DEBUG_PREFIX,"VRM scene fully loaded");
 
             },
             // called while loading is progressing
-            ( progress ) => console.log( 'Loading model...', 100.0 * ( progress.loaded / progress.total ), '%' ),
+            ( progress ) => {
+                const percent = Math.round(100.0 * ( progress.loaded / progress.total ));
+                console.debug(DEBUG_PREFIX, 'Loading model...', percent, '%');
+                $("#vrm_model_loading_percent").text(percent);
+            },
             // called when loading has errors
             ( error ) => console.error( error )
         );
@@ -353,26 +368,28 @@ function sampleClassifyText(text) {
 }
 
 // Blink
-function blink() {
+function blink(vrm, instanceId) {
     var blinktimeout = Math.floor(Math.random() * 250) + 50;
     
-    const current_blink = currentVRM.expressionManager.getValue("blinkLeft");
-    console.debug(DEBUG_PREFIX, "TEST", current_blink)
+    const current_blink = 0; //currentVRM.expressionManager.getValue("blinkLeft");
+    console.debug(DEBUG_PREFIX, "TEST", current_blink, instanceId, currentInstanceId);
     setTimeout(() => {
-        if (currentVRM) {
-            currentVRM.expressionManager.setValue("blink",current_blink);
+        if (vrm) {
+            vrm.expressionManager.setValue("blink",current_blink);
             //console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
         }
     }, blinktimeout);
     
-    if (currentVRM) {
-        currentVRM.expressionManager.setValue("blink",1.0-current_blink);
-        currentVRM.expressionManager.setValue(currentExpression,1);
+    if (vrm) {
+        vrm.expressionManager.setValue("blink",1.0-current_blink);
+        vrm.expressionManager.setValue(currentExpression,1);
     }
 
     var rand = Math.round(Math.random() * 10000) + 1000;
     setTimeout(function () {
-        if (currentVRM)
-            blink();
+        if (vrm && instanceId == currentInstanceId)
+            blink(vrm,instanceId);
+        else
+            console.debug(DEBUG_PREFIX,"Stopping blink different instance detected.")
     }, rand);
 }

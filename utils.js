@@ -2,6 +2,8 @@ import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 import {
     DEBUG_PREFIX,
+    DEFAULT_EXPRESSION_MAPPING,
+    DEFAULT_MOTION_MAPPING
 } from './constants.js';
 
 export {
@@ -37,7 +39,7 @@ function currentChatMembers() {
     return chat_members;
 }
 
-function loadAnimationUi(model_expressions, model_motions, expression_select_id, motion_select_id, expression_select_value, motion_select_value) {
+function loadAnimationUi(type, use_default_settings, model_expressions, model_motions, expression_select_id, motion_select_id, expression_select_value, motion_select_value, default_settings=false) {
     $(`#${expression_select_id}`)
         .find('option')
         .remove()
@@ -59,6 +61,16 @@ function loadAnimationUi(model_expressions, model_motions, expression_select_id,
         $(`#${motion_select_id}`).append(new Option(name, motion));
     }
 
+    
     $(`#${expression_select_id}`).val(expression_select_value);
     $(`#${motion_select_id}`).val(motion_select_value);
+
+    if (use_default_settings) {
+        if (model_expressions.includes(DEFAULT_EXPRESSION_MAPPING[type])) {
+            $(`#${expression_select_id}`).val(DEFAULT_EXPRESSION_MAPPING[type]);
+        }
+        if (model_motions.includes(DEFAULT_MOTION_MAPPING[type])) {
+            $(`#${motion_select_id}`).val(DEFAULT_MOTION_MAPPING[type]);
+        }
+    }
 }

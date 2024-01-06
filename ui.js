@@ -143,9 +143,12 @@ async function onModelResetClick() {
 async function onModelChange() {
     const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
+    let use_default_settings = false;
+
+    $('#vrm_model_settings').hide();
+    $('#vrm_model_loading').show();
 
     if (model_path == 'none') {
-        $('#vrm_model_settings').hide();
         delete extension_settings.vrm.character_model_mapping[character];
         saveSettingsDebounced();
         return;
@@ -154,9 +157,9 @@ async function onModelChange() {
     extension_settings.vrm.character_model_mapping[character] = model_path;
     saveSettingsDebounced();
 
-    
     // Initialize new model
     if (extension_settings.vrm.model_settings[model_path] === undefined) {
+        use_default_settings = true;
         extension_settings.vrm.model_settings[model_path] = {
             'animation_default': { 'expression': 'none', 'motion': 'none' },
             //'animation_click': { 'expression': 'none', 'motion': 'none', 'message': '' },
@@ -172,7 +175,7 @@ async function onModelChange() {
     }
 
     await loadVRM();
-    await loadModelUi();
+    await loadModelUi(use_default_settings);
 
     const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
     const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
@@ -186,6 +189,8 @@ async function onModelChange() {
         setMotion(motion);
     }
     
+    $('#vrm_model_settings').show();
+    $('#vrm_model_loading').hide();
 }
 
 async function onAnimationMappingChange(type) {
@@ -218,7 +223,7 @@ async function onAnimationMappingChange(type) {
         setMotion(motion);
 }
 
-async function loadModelUi() {
+async function loadModelUi(use_default_settings) {
     const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
     const expression_ui = $('#vrm_expression_mapping');
@@ -250,12 +255,25 @@ async function loadModelUi() {
 
     // Default expression/motion
     loadAnimationUi(
+        "default",
+        use_default_settings,
         model_expressions,
         model_motions,
         'vrm_default_expression_select',
         'vrm_default_motion_select',
         extension_settings.vrm.model_settings[model_path]['animation_default']['expression'],
         extension_settings.vrm.model_settings[model_path]['animation_default']['motion']);
+
+    // Default loaded
+    if (extension_settings.vrm.model_settings[model_path]['animation_default']['expression'] != $(`#vrm_default_expression_select`).val()) {
+        extension_settings.vrm.model_settings[model_path]['animation_default']['expression'] = $(`#vrm_default_expression_select`).val();
+        saveSettingsDebounced();
+    }
+    
+    if (extension_settings.vrm.model_settings[model_path]['animation_default']['motion'] != $(`#vrm_default_motion_select`).val()) {
+        extension_settings.vrm.model_settings[model_path]['animation_default']['motion'] = $(`#vrm_default_motion_select`).val();
+        saveSettingsDebounced();
+    }
 
     // Classify expressions mapping
     for (const expression of CLASSIFY_EXPRESSIONS) {
@@ -286,6 +304,8 @@ async function loadModelUi() {
         `);
 
         loadAnimationUi(
+            expression,
+            use_default_settings,
             model_expressions,
             model_motions,
             `vrm_expression_select_${expression}`,
@@ -297,9 +317,18 @@ async function loadModelUi() {
         $(`#vrm_motion_select_${expression}`).on('change', function () { updateExpressionMapping(expression); });
         $(`#vrm_expression_replay_${expression}`).on('click', function () { updateExpressionMapping(expression); });
         $(`#vrm_motion_replay_${expression}`).on('click', function () { updateExpressionMapping(expression); });
-    }
 
-    $('#vrm_model_settings').show();
+        // Default loaded
+        if (extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression]['expression'] != $(`#vrm_expression_select_${expression}`).val()) {
+            extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression]['expression'] = $(`#vrm_expression_select_${expression}`).val();
+            saveSettingsDebounced();
+        }
+        
+        if (extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression]['motion'] != $(`#vrm_motion_select_${expression}`).val()) {
+            extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression]['motion'] = $(`#vrm_motion_select_${expression}`).val();
+            saveSettingsDebounced();
+        }
+    }
 }
 
 async function updateExpressionMapping(expression) {

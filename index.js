@@ -9,14 +9,21 @@ DONE:
 - blinking auto (basic)
 - transparent background
 - slash command expression/motion
+- default setting using expression name
+- Efficient resize handling
 
 TODO:
-- default setting using expression name
 - mouth movement
 - blink smooth and adapt to current expression?
-- loader for vrma ?
 - group support
 - other kind of camera
+- default hand made animation when no animation playing
+- loop option for animations
+- Optimize avoid full reload when not needed
+    - look at camera
+    - model switch
+    - show grid
+    - only full load at start and on reload button?
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
@@ -97,7 +104,7 @@ function loadSettings() {
     $('#vrm_default_motion_replay').on('click', () => {onAnimationMappingChange('animation_default');});
 
     // Events
-    window.addEventListener('resize', () => {loadVRM(); console.debug(DEBUG_PREFIX,'Window resized, reloading VRM');});
+    //window.addEventListener('resize', () => {loadVRM(); console.debug(DEBUG_PREFIX,'Window resized, reloading VRM');});
 
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersList);
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersModels);
@@ -125,9 +132,11 @@ function loadSettings() {
 //  Module Worker              //
 //#############################//
 
+/*
 async function moduleWorker() {
     
 }
+*/
 
 //#############################//
 //  Extension load             //
