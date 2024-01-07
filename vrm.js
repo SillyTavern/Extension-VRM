@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-import { loadMixamoAnimation } from './loadMixamoAnimation.js';
+import { loadBVHAnimation, loadMixamoAnimation } from './animationLoader.js';
 
 import { getRequestHeaders, saveSettings, saveSettingsDebounced, sendMessageAsUser } from '../../../../script.js';
 import { getContext, extension_settings, getApiUrl, doExtrasFetch, modules } from '../../../extensions.js';
@@ -43,7 +43,6 @@ const clock = new THREE.Clock();
 clock.start();
 
 async function loadVRM() {
-    
     currentMixer = undefined;
     currentVRM = undefined;
     currentExpression = "neutral";
@@ -62,14 +61,15 @@ async function loadVRM() {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias : true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.domElement.id = VRM_CANVAS_ID;
     document.body.appendChild( renderer.domElement );
 
     // camera
-    const camera = new THREE.PerspectiveCamera( 30.0, window.innerWidth / window.innerHeight, 0.1, 20.0 );
+    const camera = new THREE.PerspectiveCamera( 30.0, window.innerWidth / window.innerHeight, 0.1, 100.0 );
+    //const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
     camera.position.set( 0.0, 1.0, 5.0 );
 
     // camera controls
-    renderer.domElement.id = VRM_CANVAS_ID;
     const controls = new OrbitControls( camera, renderer.domElement );
     controls.screenSpacePanning = true;
     controls.target.set( 0.0, 1.0, 0.0 );
@@ -121,7 +121,7 @@ async function loadVRM() {
                 currentVRM = vrm;
                 if (extension_settings.vrm.follow_camera)
                     vrm.lookAt.target = lookAtTarget;
-                //console.log( vrm );
+                vrm.scene.name = "VRM"; // DBG
                 scene.add( vrm.scene );
 
                 // rotate if the VRM is VRM0.0
@@ -150,7 +150,7 @@ async function loadVRM() {
                     }
                     
                     if ( currentVRM ) {
-                        const s = 0.01 * Math.PI * Math.sin(Math.PI * clock.elapsedTime);
+                        //const s = 0.01 * Math.PI * Math.sin(Math.PI * clock.elapsedTime);
                         //blink();
                         //currentVRM.humanoid.getNormalizedBoneNode('neck').rotation.y = s;
                         currentVRM.update( deltaTime );
@@ -192,7 +192,6 @@ async function loadVRM() {
                 }
 
                 console.debug(DEBUG_PREFIX,"VRM scene fully loaded");
-
             },
             // called while loading is progressing
             ( progress ) => {
@@ -204,23 +203,6 @@ async function loadVRM() {
             ( error ) => console.error( error )
         );
     }
-}
-
-// mixamo animation
-function loadFBX( animationUrl ) {
-
-	currentAnimation = animationUrl;
-
-	// create AnimationMixer for VRM
-	currentMixer = new THREE.AnimationMixer( currentVRM.scene );
-
-	// Load animation
-	loadMixamoAnimation( animationUrl, currentVRM ).then( ( clip ) => {
-		// Apply the loaded animation to mixer and play
-		currentMixer.timeScale = 1.0;
-		currentMixer.clipAction( clip ).play();
-	} );
-
 }
 
 async function setExpression( value ) {
@@ -242,11 +224,38 @@ async function setMotion( value ) {
     if (value == "none" && currentMixer !== undefined)
         currentMixer.timeScale = 0;
 
-    if (currentMotion != value) {
-        currentMotion = value;
-        console.debug(DEBUG_PREFIX,"Loading fbx file");
-        if (currentVRM)
-            loadFBX(currentMotion);
+
+    if (currentVRM) {
+        if (currentMotion != value) {
+            currentMotion = value;
+
+            // create AnimationMixer for VRM
+            currentMixer = new THREE.AnimationMixer( currentVRM.scene );
+
+            // Mixamo animation
+            if (currentMotion.endsWith(".fbx")) {
+                console.debug(DEBUG_PREFIX,"Loading fbx file");
+
+                // Load animation
+                loadMixamoAnimation(currentMotion, currentVRM).then( ( clip ) => {
+                    // Apply the loaded animation to mixer and play
+                    currentMixer.timeScale = 1.0;
+                    currentMixer.clipAction( clip ).play();
+                    console.debug(DEBUG_PREFIX,"VRM CLIP",clip);
+                } );
+            }
+
+            if (currentMotion.endsWith(".bvh")) {
+                console.debug(DEBUG_PREFIX,"Loading bvh file");
+                const clip = await loadBVHAnimation(currentMotion, currentVRM);
+
+                // create AnimationMixer for VRM
+                currentMixer = new THREE.AnimationMixer( currentVRM.scene );
+                currentMixer.timeScale = 1.0;
+                currentMixer.clipAction( clip ).play();
+                console.debug(DEBUG_PREFIX,"VRM CLIP",clip);
+            }
+        }
     }
 }
 

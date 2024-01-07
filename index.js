@@ -11,6 +11,7 @@ DONE:
 - slash command expression/motion
 - default setting using expression name
 - Efficient resize handling
+- basic bvh loader
 
 TODO:
 - mouth movement
@@ -124,9 +125,6 @@ function loadSettings() {
 //#############################//
 //  Methods                    //
 //#############################//
-
-
-
 
 //#############################//
 //  Module Worker              //
