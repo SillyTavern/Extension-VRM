@@ -20,6 +20,7 @@ TODO:
 - other kind of camera
 - default hand made animation when no animation playing
 - loop option for animations
+- check if camera can be loaded from fbx or relative camera
 - Optimize avoid full reload when not needed
     - look at camera
     - model switch
@@ -41,6 +42,7 @@ import {
     onEnabledClick,
     onFollowCursorClick,
     onShowGridClick,
+    onCameraChange,
     onCharacterChange,
     onCharacterRefreshClick,
     onCharacterRemoveClick,
@@ -67,6 +69,7 @@ const defaultSettings = {
     // Global settings
     enabled: false,
     follow_camera: false,
+    camera_type: "default",
 
     // Debug
     show_grid: false,
@@ -90,6 +93,7 @@ function loadSettings() {
     $('#vrm_enabled_checkbox').prop('checked', extension_settings.vrm.enabled);
     $('#vrm_follow_camera_checkbox').prop('checked', extension_settings.vrm.follow_camera);
     $('#vrm_show_grid_checkbox').prop('checked', extension_settings.vrm.show_grid);
+    $('#vrm_camera_select').on('change', onCameraChange);
 
     $('#vrm_character_select').on('change', onCharacterChange);
     $('#vrm_character_refresh_button').on('click', onCharacterRefreshClick);

@@ -26,6 +26,7 @@ export {
     onEnabledClick,
     onFollowCursorClick,
     onShowGridClick,
+    onCameraChange,
     onCharacterChange,
     onCharacterRefreshClick,
     onCharacterRemoveClick,
@@ -61,6 +62,12 @@ async function onShowGridClick() {
     extension_settings.vrm.show_grid = $('#vrm_show_grid_checkbox').is(':checked');
     saveSettingsDebounced();
 
+    await loadVRM();
+}
+
+async function onCameraChange() {
+    extension_settings.vrm.camera_type = String($('#vrm_camera_select').val());
+    saveSettingsDebounced();
     await loadVRM();
 }
 

@@ -65,7 +65,7 @@ async function loadVRM() {
     document.body.appendChild( renderer.domElement );
 
     // camera
-    const camera = new THREE.PerspectiveCamera( 30.0, window.innerWidth / window.innerHeight, 0.1, 100.0 );
+    const camera = new THREE.PerspectiveCamera( 30.0, window.innerWidth / window.innerHeight, 0.1, 1000.0 );
     //const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
     camera.position.set( 0.0, 1.0, 5.0 );
 
@@ -135,6 +135,9 @@ async function loadVRM() {
                     const axesHelper = new THREE.AxesHelper( 5 );
                     scene.add( axesHelper );
                 }
+                
+                let oldObjectPosition = new THREE.Vector3();
+                currentVRM.humanoid.getNormalizedBoneNode("hips").getWorldPosition( oldObjectPosition );
 
                 // animate
                 function animate() {
@@ -150,11 +153,18 @@ async function loadVRM() {
                     }
                     
                     if ( currentVRM ) {
-                        //const s = 0.01 * Math.PI * Math.sin(Math.PI * clock.elapsedTime);
-                        //blink();
-                        //currentVRM.humanoid.getNormalizedBoneNode('neck').rotation.y = s;
                         currentVRM.update( deltaTime );
-                        //console.debug(DEBUG_PREFIX,currentVRM);
+
+                        // Camera orbit update
+                        if (extension_settings.vrm.camera_type == "orbit") {
+                            const newObjectPosition = new THREE.Vector3();
+                            currentVRM.humanoid.getNormalizedBoneNode("hips").getWorldPosition( newObjectPosition );
+                            const delta = newObjectPosition.clone().sub(oldObjectPosition);
+                            camera.position.add(delta)
+                            oldObjectPosition = newObjectPosition.clone();
+                            controls.target.set(newObjectPosition.x, controls.target.y, newObjectPosition.z);
+                            controls.update();
+                        }
                     }
                     renderer.render( scene, camera );
                 }
@@ -191,6 +201,13 @@ async function loadVRM() {
                     renderer.setSize( window.innerWidth, window.innerHeight );
                 }
 
+                
+                if(currentVRM)
+                    console.debug(DEBUG_PREFIX,"VRM DEBUG",currentVRM)
+
+                
+                console.debug(DEBUG_PREFIX,"VRM DEBUG",controls)
+
                 console.debug(DEBUG_PREFIX,"VRM scene fully loaded");
             },
             // called while loading is progressing
@@ -203,6 +220,8 @@ async function loadVRM() {
             ( error ) => console.error( error )
         );
     }
+
+    console.debug(DEBUG_PREFIX,"DEBUG",renderer);
 }
 
 async function setExpression( value ) {
