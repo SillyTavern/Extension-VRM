@@ -15,6 +15,8 @@ DONE:
 
 TODO:
 - mouth movement
+    - basic text based
+    - tts lip sync
 - blink smooth and adapt to current expression?
 - group support
 - other kind of camera
@@ -26,6 +28,7 @@ TODO:
     - model switch
     - show grid
     - only full load at start and on reload button?
+- 3D room
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";

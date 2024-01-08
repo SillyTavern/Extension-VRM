@@ -61,8 +61,6 @@ async function onFollowCursorClick() {
 async function onShowGridClick() {
     extension_settings.vrm.show_grid = $('#vrm_show_grid_checkbox').is(':checked');
     saveSettingsDebounced();
-
-    await loadVRM();
 }
 
 async function onCameraChange() {

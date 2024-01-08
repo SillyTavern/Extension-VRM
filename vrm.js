@@ -126,15 +126,16 @@ async function loadVRM() {
 
                 // rotate if the VRM is VRM0.0
 			    VRMUtils.rotateVRM0(vrm);
+                
+                const gridHelper = new THREE.GridHelper( 10, 10 );
+                scene.add( gridHelper );
+
+                const axesHelper = new THREE.AxesHelper( 5 );
+                scene.add( axesHelper );
 
                 // helpers
-                if (extension_settings.vrm.show_grid) {
-                    const gridHelper = new THREE.GridHelper( 10, 10 );
-                    scene.add( gridHelper );
-
-                    const axesHelper = new THREE.AxesHelper( 5 );
-                    scene.add( axesHelper );
-                }
+                gridHelper.visible = extension_settings.vrm.show_grid;
+                axesHelper.visible = extension_settings.vrm.show_grid;
                 
                 let oldObjectPosition = new THREE.Vector3();
                 currentVRM.humanoid.getNormalizedBoneNode("hips").getWorldPosition( oldObjectPosition );
@@ -166,6 +167,10 @@ async function loadVRM() {
                             controls.update();
                         }
                     }
+
+                    
+                    gridHelper.visible = extension_settings.vrm.show_grid;
+                    axesHelper.visible = extension_settings.vrm.show_grid;
                     renderer.render( scene, camera );
                 }
 
