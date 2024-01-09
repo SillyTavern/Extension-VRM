@@ -20,6 +20,7 @@ import {
     trimToEndSentence,
     trimToStartSentence } from '../../../utils.js';
 import { expression } from './lib/jsm/nodes/Nodes.js';
+import { ThreeMFLoader } from './lib/jsm/loaders/3MFLoader.js';
 
 export {
     loadVRM,
@@ -27,17 +28,19 @@ export {
     currentMotion,
     setExpression,
     setMotion,
-    updateExpression
+    updateExpression,
+    talk
 }
 
 
 // gltf and vrm
 let currentVRM = undefined;
-let currentAnimation = undefined;
+let currentVRMContainer = undefined;
 let currentMixer = undefined;
 let currentExpression = "neutral";
 let currentMotion = undefined;
 let currentInstanceId = 0;
+let isTalking = false;
 
 const clock = new THREE.Clock();
 clock.start();
@@ -70,10 +73,10 @@ async function loadVRM() {
     camera.position.set( 0.0, 1.0, 5.0 );
 
     // camera controls
-    const controls = new OrbitControls( camera, renderer.domElement );
-    controls.screenSpacePanning = true;
-    controls.target.set( 0.0, 1.0, 0.0 );
-    controls.update();
+    //const controls = new OrbitControls( camera, renderer.domElement );
+    //controls.screenSpacePanning = true;
+    //controls.target.set( 0.0, 1.0, 0.0 );
+    //controls.update();
 
     // scene
     const scene = new THREE.Scene();
@@ -119,10 +122,17 @@ async function loadVRM() {
                 } );
 
                 currentVRM = vrm;
-                if (extension_settings.vrm.follow_camera)
-                    vrm.lookAt.target = lookAtTarget;
                 vrm.scene.name = "VRM"; // DBG
-                scene.add( vrm.scene );
+                currentVRMContainer = new THREE.Group();
+                currentVRMContainer.name = "VRM_CONTAINER";
+                currentVRMContainer.scale.set(2,2,2);
+                currentVRMContainer.position.y = 0.5;
+                const containerOffset = new THREE.Group();
+                containerOffset.position.y = -vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y; // offset model for rotate on "center"
+                //vrm.scene.position.y = -vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+                containerOffset.add(vrm.scene)
+                currentVRMContainer.add(containerOffset)
+                scene.add( currentVRMContainer );
 
                 // rotate if the VRM is VRM0.0
 			    VRMUtils.rotateVRM0(vrm);
@@ -154,9 +164,13 @@ async function loadVRM() {
                     }
                     
                     if ( currentVRM ) {
-                        currentVRM.update( deltaTime );
+                        // Look at camera
+                        if (extension_settings.vrm.follow_camera)
+                            currentVRM.lookAt.target = lookAtTarget;
+                        else
+                            currentVRM.lookAt.target = null;
 
-                        // Camera orbit update
+                        /*/ Camera orbit update
                         if (extension_settings.vrm.camera_type == "orbit") {
                             const newObjectPosition = new THREE.Vector3();
                             currentVRM.humanoid.getNormalizedBoneNode("hips").getWorldPosition( newObjectPosition );
@@ -165,7 +179,9 @@ async function loadVRM() {
                             oldObjectPosition = newObjectPosition.clone();
                             controls.target.set(newObjectPosition.x, controls.target.y, newObjectPosition.z);
                             controls.update();
-                        }
+                        }*/
+                        
+                        currentVRM.update( deltaTime );
                     }
 
                     
@@ -210,8 +226,100 @@ async function loadVRM() {
                 if(currentVRM)
                     console.debug(DEBUG_PREFIX,"VRM DEBUG",currentVRM)
 
+                /// DBG
+                var raycaster = new THREE.Raycaster();
+                var previousMouse = new THREE.Vector2();
+                var currentMouse = new THREE.Vector2();
+                var isDragging = false;
+                var isRotating = false;
+                var dragObject;
+
+                // events
+                document.addEventListener("pointermove", event => {
+                    currentMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+                    currentMouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+                    raycaster.setFromCamera(currentMouse, camera);
+                        
+                    if (isDragging) {
+                        const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
+                        const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
+                        const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
+
+                        dragObject.position.set( px, py+1, 0.0 );
+                        //currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).position.set( px, py, 0.0 );
+                    }
+
+                    if (isRotating) {
+                        const xDelta = (previousMouse.x - (event.clientX / window.innerWidth)) * 10;
+                        const yDelta = (previousMouse.y - (event.clientY / window.innerHeight)) * 10;
+
+                        //dragObject.rotateOnWorldAxis(new THREE.Vector3(1.0,0.0,0.0), yDelta)
+                        dragObject.rotation.set(dragObject.rotation.x - yDelta, dragObject.rotation.y - xDelta , 0.0 );
+                        //currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).rotation.set(currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).rotation.x - yDelta, currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).rotation.y - xDelta , 0.0 );
+                    }
+
+                    previousMouse.x = (event.clientX / window.innerWidth);
+                    previousMouse.y = (event.clientY / window.innerHeight);
+                });
+
+                document.addEventListener("wheel", (event) => {
+                    event.preventDefault();
+
+                    var intersects = raycaster.intersectObjects([currentVRM.scene]);
+                    if (intersects.length > 0) {
+                        //controls.enabled = false;
+                        // Climb to VRM object
+                        dragObject = intersects[0].object;
+                        while (dragObject.parent.type != "Scene")
+                            dragObject = dragObject.parent;
+                        console.debug(DEBUG_PREFIX,"Scaling ",dragObject.name);
+                        // Restrict scale
+                        const scale = Math.min(Math.max(-0.1, event.deltaY * -0.01), 0.1);
+                        const y = dragObject.position.y;
+
+                        dragObject.scale.x += scale;
+                        dragObject.scale.y += scale;
+                        dragObject.scale.z += scale;
+                    }
+
+                } );
                 
-                console.debug(DEBUG_PREFIX,"VRM DEBUG",controls)
+                document.addEventListener("pointerdown", (event) => {
+                    var intersects = raycaster.intersectObjects([currentVRM.scene]);
+                    if (intersects.length > 0) {
+                        //controls.enabled = false;
+                        // Climb to VRM object
+                        dragObject = intersects[0].object;
+                        while (dragObject.parent.type != "VRM_CONTAINER" && dragObject.parent.type != "Scene")
+                            dragObject = dragObject.parent;
+
+                        if (dragObject.name != "VRM_CONTAINER")
+                            return;
+
+                        if(event.pointerType === 'mouse' && event.button === 0){ 
+                            isDragging = true;
+                            isRotating = false;
+                            console.debug(DEBUG_PREFIX,"Dragging ",dragObject.name);
+                        }
+
+                        if(event.pointerType === 'mouse' && event.button === 1){ 
+                            isDragging = false;
+                            isRotating = true;
+                            console.debug(DEBUG_PREFIX,"Rotating ",dragObject.name);
+                        }
+                    }
+                } );
+
+                document.addEventListener("pointerup", () => {
+                    isDragging = false;
+                    isRotating = false;
+                    dragObject = null;
+                    //controls.enabled = true;
+                } );
+                /// DBG
+                
+                //console.debug(DEBUG_PREFIX,"VRM DEBUG",controls)
+                console.debug(DEBUG_PREFIX,"VRM DEBUG",scene)
 
                 console.debug(DEBUG_PREFIX,"VRM scene fully loaded");
             },
@@ -247,7 +355,6 @@ async function setMotion( value ) {
 
     if (value == "none" && currentMixer !== undefined)
         currentMixer.timeScale = 0;
-
 
     if (currentVRM) {
         if (currentMotion != value) {
@@ -425,4 +532,62 @@ function blink(vrm, instanceId) {
         else
             console.debug(DEBUG_PREFIX,"Stopping blink different instance detected.")
     }, rand);
+}
+
+async function talk(chat_id) {
+    // No model for user or system
+    if (getContext().chat[chat_id].is_user || getContext().chat[chat_id].is_system)
+        return;
+
+    const message = getContext().chat[chat_id].mes;
+
+    console.debug(DEBUG_PREFIX,'Playing mouth animation for message:',message);
+    // No model loaded for character
+    if (currentVRM === undefined)
+        return;
+
+    let abortTalking = false;
+
+    // Character is already talking TODO: stop previous talk animation
+    if (isTalking) {
+        console.debug(DEBUG_PREFIX,'Character is already talking abort');
+        while (isTalking) {
+            abortTalking = true;
+            await delay(100);
+        }
+        abortTalking = false;
+        console.debug(DEBUG_PREFIX,'Start new talk');
+        //return;
+    }
+
+    isTalking = true;
+    let startTime = Date.now();
+    const duration = message.length * 10;
+    const mouth_open_speed = 1.5;
+    let mouth_y = 0;
+
+    currentVRM.expressionManager.setValue(currentExpression,0.25);
+    console.debug(DEBUG_PREFIX,"Talk duration",duration);
+
+    while ((Date.now() - startTime) < duration) {
+        if (abortTalking) {
+            console.debug(DEBUG_PREFIX,'Abort talking requested.');
+            break;
+        }
+
+        // Model destroyed during animation
+        if (currentVRM === undefined) {
+            console.debug(DEBUG_PREFIX,'Model destroyed during talking animation, abort');
+            break;
+        }
+
+        mouth_y = Math.sin((Date.now() - startTime));
+        currentVRM.expressionManager.setValue("aa",mouth_y);
+        await delay(100 / mouth_open_speed);
+    }
+
+    if (currentVRM === undefined) {
+        currentVRM.expressionManager.setValue(currentExpression,1.0);
+    }
+    isTalking = false;
 }

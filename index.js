@@ -12,21 +12,25 @@ DONE:
 - default setting using expression name
 - Efficient resize handling
 - basic bvh loader
-
-TODO:
 - mouth movement
     - basic text based
+- Basic model control move/rotate/scale
+
+TODO:
+- fix mouse control
+    - should not work through ui
+    - dragging keep offset with mouse cursor
+- Factorise code
+- Save model settings pos/rotate/scale
+- other kind of camera
+- default hand made animation when no animation playing
+- mouth movement
     - tts lip sync
 - blink smooth and adapt to current expression?
 - group support
-- other kind of camera
-- default hand made animation when no animation playing
 - loop option for animations
-- check if camera can be loaded from fbx or relative camera
 - Optimize avoid full reload when not needed
-    - look at camera
     - model switch
-    - show grid
     - only full load at start and on reload button?
 - 3D room
 */
@@ -39,13 +43,13 @@ import {
     loadVRM,
     setExpression,
     setMotion,
-    updateExpression
+    updateExpression,
+    talk
 } from "./vrm.js";
 import {
     onEnabledClick,
-    onFollowCursorClick,
+    onFollowCameraClick,
     onShowGridClick,
-    onCameraChange,
     onCharacterChange,
     onCharacterRefreshClick,
     onCharacterRemoveClick,
@@ -96,7 +100,6 @@ function loadSettings() {
     $('#vrm_enabled_checkbox').prop('checked', extension_settings.vrm.enabled);
     $('#vrm_follow_camera_checkbox').prop('checked', extension_settings.vrm.follow_camera);
     $('#vrm_show_grid_checkbox').prop('checked', extension_settings.vrm.show_grid);
-    $('#vrm_camera_select').on('change', onCameraChange);
 
     $('#vrm_character_select').on('change', onCharacterChange);
     $('#vrm_character_refresh_button').on('click', onCharacterRefreshClick);
@@ -121,7 +124,8 @@ function loadSettings() {
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersList);
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersModels);
 
-    eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => updateExpression(chat_id));
+    eventSource.on(event_types.MESSAGE_RECEIVED, async (chat_id) => {await updateExpression(chat_id); talk(chat_id)});
+    eventSource.on(event_types.MESSAGE_EDITED, async (chat_id) => {await updateExpression(chat_id); talk(chat_id)});
 
     updateCharactersListOnce();
     updateCharactersModels();
@@ -155,7 +159,7 @@ jQuery(async () => {
     loadSettings();
 
     $('#vrm_enabled_checkbox').on('click', onEnabledClick);
-    $('#vrm_follow_camera_checkbox').on('click', onFollowCursorClick);
+    $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
 
     $('#vrm_reload_button').on('click', () => {loadVRM(); console.debug(DEBUG_PREFIX,'Reset clicked, reloading VRM');});

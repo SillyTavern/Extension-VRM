@@ -24,9 +24,8 @@ import { exp } from './lib/jsm/nodes/Nodes.js';
 
 export {
     onEnabledClick,
-    onFollowCursorClick,
+    onFollowCameraClick,
     onShowGridClick,
-    onCameraChange,
     onCharacterChange,
     onCharacterRefreshClick,
     onCharacterRemoveClick,
@@ -51,22 +50,14 @@ async function onEnabledClick() {
     await loadVRM();
 }
 
-async function onFollowCursorClick() {
+async function onFollowCameraClick() {
     extension_settings.vrm.follow_camera = $('#vrm_follow_camera_checkbox').is(':checked');
     saveSettingsDebounced();
-
-    await loadVRM();
 }
 
 async function onShowGridClick() {
     extension_settings.vrm.show_grid = $('#vrm_show_grid_checkbox').is(':checked');
     saveSettingsDebounced();
-}
-
-async function onCameraChange() {
-    extension_settings.vrm.camera_type = String($('#vrm_camera_select').val());
-    saveSettingsDebounced();
-    await loadVRM();
 }
 
 async function onCharacterChange() {
@@ -247,8 +238,13 @@ async function loadModelUi(use_default_settings) {
 
     console.debug(DEBUG_PREFIX, 'loading settings of model:', model);
 
-    let model_expressions = Object.keys(model.expressionManager._expressionMap) ?? [];
+    let model_expressions = [];
     let model_motions = animations_files;
+
+    for (const i of Object.keys(model.expressionManager.expressionMap) ?? []) {
+        if (!model.expressionManager.blinkExpressionNames.includes(i) && !model.expressionManager.mouthExpressionNames.includes(i) && !model.expressionManager.lookAtExpressionNames.includes(i))
+            model_expressions.push(i);
+    }
 
     model_expressions.sort();
     model_motions.sort();

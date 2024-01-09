@@ -74,10 +74,10 @@ const mixamoVRMRigMap = {
  * Load Mixamo animation, convert for three-vrm use, and return it.
  *
  * @param {string} url A url of mixamo animation data
- * @param {VRM} vrm A target VRM
+ * @param {vrm} vrm A target VRM
  * @returns {Promise<THREE.AnimationClip>} The converted AnimationClip
  */
-function loadMixamoAnimation( url, vrm ) {
+function loadMixamoAnimation( url, vrm) {
 
 	const loader = new FBXLoader(); // A loader which loads FBX
 	return loader.loadAsync( url ).then( ( asset ) => {
@@ -93,8 +93,8 @@ function loadMixamoAnimation( url, vrm ) {
 
 		// Adjust with reference to hips height.
 		const motionHipsHeight = asset.getObjectByName( 'mixamorigHips' ).position.y;
-		const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).getWorldPosition( _vec3 ).y;
-		const vrmRootY = vrm.scene.getWorldPosition( _vec3 ).y;
+		const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+		const vrmRootY = vrm.scene.position.y;
 		const vrmHipsHeight = Math.abs( vrmHipsY - vrmRootY );
 		const hipsPositionScale = vrmHipsHeight / motionHipsHeight;
 
@@ -195,10 +195,12 @@ function loadBVHAnimation( url, vrm ) {
 
 		// Adjust with reference to hips height.
 		const motionHipsHeight = result.skeleton.getBoneByName("hips").position.y;
-		const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).getWorldPosition( _vec3 ).y;
-		const vrmRootY = vrm.scene.getWorldPosition( _vec3 ).y;
+		const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+		const vrmRootY = vrm.scene.position.y;
 		const vrmHipsHeight = Math.abs( vrmHipsY - vrmRootY );
 		const hipsPositionScale = vrmHipsHeight / motionHipsHeight;
+
+		console.debug("TESSSST",vrmHipsHeight, motionHipsHeight)
 
 		clip.tracks.forEach( ( track ) => {
 
@@ -254,6 +256,7 @@ function loadBVHAnimation( url, vrm ) {
 				} else if ( track instanceof THREE.VectorKeyframeTrack ) {
 
 					const value = track.values.map( ( v, i ) => ( vrm.meta?.metaVersion === '0' && i % 3 !== 1 ? - v : v ) * hipsPositionScale );
+					console.debug("DEBUGUUGUGU",track)
 					tracks.push( new THREE.VectorKeyframeTrack( `${vrmNodeName}.${propertyName}`, track.times, value ) );
 
 				}
