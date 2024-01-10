@@ -11,7 +11,9 @@ import {
     MODULE_NAME,
     DEBUG_PREFIX,
     VRM_CANVAS_ID,
-    FALLBACK_EXPRESSION
+    FALLBACK_EXPRESSION,
+    MIN_SCALE,
+    MAX_SCALE
 } from "./constants.js";
 
 import { currentChatMembers } from './utils.js';
@@ -32,6 +34,14 @@ export {
     talk
 }
 
+// Globals
+let current_characters = []
+
+// 3D Scene
+let renderer = undefined;
+let scene = undefined;
+let camera = undefined;
+let light = undefined;
 
 // gltf and vrm
 let currentVRM = undefined;
@@ -42,8 +52,16 @@ let currentMotion = undefined;
 let currentInstanceId = 0;
 let isTalking = false;
 
-const clock = new THREE.Clock();
-clock.start();
+let clock = undefined;
+
+// Mouse controls
+let raycaster = new THREE.Raycaster();
+let previousMouse = undefined;
+let currentMouse = undefined;
+let mouseOffset = undefined;
+let isDragging = false;
+let isRotating = false;
+let dragObject = undefined;
 
 async function loadVRM() {
     currentMixer = undefined;
@@ -60,15 +78,18 @@ async function loadVRM() {
         return
     }
 
+    clock = new THREE.Clock();
+    clock.start();
+
     // renderer
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias : true });
+    renderer = new THREE.WebGLRenderer({ alpha: true, antialias : true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.domElement.id = VRM_CANVAS_ID;
     document.body.appendChild( renderer.domElement );
 
     // camera
-    const camera = new THREE.PerspectiveCamera( 30.0, window.innerWidth / window.innerHeight, 0.1, 1000.0 );
+    camera = new THREE.PerspectiveCamera( 30.0, window.innerWidth / window.innerHeight, 0.1, 1000.0 );
     //const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
     camera.position.set( 0.0, 1.0, 5.0 );
 
@@ -79,10 +100,10 @@ async function loadVRM() {
     //controls.update();
 
     // scene
-    const scene = new THREE.Scene();
+    scene = new THREE.Scene();
 
     // light
-    const light = new THREE.DirectionalLight( 0xffffff );
+    light = new THREE.DirectionalLight( 0xffffff );
     light.position.set( 1.0, 1.0, 1.0 ).normalize();
     scene.add( light );
 
@@ -98,7 +119,7 @@ async function loadVRM() {
         return new VRMLoaderPlugin( parser );
     } );
 
-    const current_characters = currentChatMembers();
+    current_characters = currentChatMembers();
 
     if (current_characters.length > 0 && extension_settings.vrm.character_model_mapping[current_characters[0]] !== undefined) {
         console.debug(DEBUG_PREFIX,current_characters, extension_settings.vrm.character_model_mapping);
@@ -121,40 +142,31 @@ async function loadVRM() {
                     obj.frustumCulled = false;
                 } );
 
+                // Add vrm to scene
                 currentVRM = vrm;
-                vrm.scene.name = "VRM"; // DBG
-                currentVRMContainer = new THREE.Group();
+			    VRMUtils.rotateVRM0(vrm); // rotate if the VRM is VRM0.0
+                currentVRMContainer = new THREE.Group(); // First container to scale/position center model
                 currentVRMContainer.name = "VRM_CONTAINER";
                 currentVRMContainer.scale.set(2,2,2);
                 currentVRMContainer.position.y = 0.5;
-                const containerOffset = new THREE.Group();
+                const containerOffset = new THREE.Group(); // Second container to rotate center model
                 containerOffset.position.y = -vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y; // offset model for rotate on "center"
-                //vrm.scene.position.y = -vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
                 containerOffset.add(vrm.scene)
                 currentVRMContainer.add(containerOffset)
                 scene.add( currentVRMContainer );
-
-                // rotate if the VRM is VRM0.0
-			    VRMUtils.rotateVRM0(vrm);
                 
-                const gridHelper = new THREE.GridHelper( 10, 10 );
+                // Grid debuging helpers
+                const gridHelper = new THREE.GridHelper( 20, 20 );
                 scene.add( gridHelper );
-
-                const axesHelper = new THREE.AxesHelper( 5 );
+                const axesHelper = new THREE.AxesHelper( 10 );
                 scene.add( axesHelper );
-
-                // helpers
                 gridHelper.visible = extension_settings.vrm.show_grid;
                 axesHelper.visible = extension_settings.vrm.show_grid;
-                
-                let oldObjectPosition = new THREE.Vector3();
-                currentVRM.humanoid.getNormalizedBoneNode("hips").getWorldPosition( oldObjectPosition );
 
                 // animate
                 function animate() {
 
                     requestAnimationFrame( animate );
-                    
                     const deltaTime = clock.getDelta();
                     
                     // if animation is loaded
@@ -169,32 +181,20 @@ async function loadVRM() {
                             currentVRM.lookAt.target = lookAtTarget;
                         else
                             currentVRM.lookAt.target = null;
-
-                        /*/ Camera orbit update
-                        if (extension_settings.vrm.camera_type == "orbit") {
-                            const newObjectPosition = new THREE.Vector3();
-                            currentVRM.humanoid.getNormalizedBoneNode("hips").getWorldPosition( newObjectPosition );
-                            const delta = newObjectPosition.clone().sub(oldObjectPosition);
-                            camera.position.add(delta)
-                            oldObjectPosition = newObjectPosition.clone();
-                            controls.target.set(newObjectPosition.x, controls.target.y, newObjectPosition.z);
-                            controls.update();
-                        }*/
                         
                         currentVRM.update( deltaTime );
                     }
 
-                    
+                    // Show/hide helper grid
                     gridHelper.visible = extension_settings.vrm.show_grid;
                     axesHelper.visible = extension_settings.vrm.show_grid;
+
                     renderer.render( scene, camera );
                 }
 
                 animate();
 
-                lookAtTarget.position.x = camera.position.x;
-                lookAtTarget.position.y = ((camera.position.y-camera.position.y-camera.position.y)/2)+0.5;
-
+                // Load default expression/motion
                 const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
                 const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
 
@@ -212,111 +212,6 @@ async function loadVRM() {
 
                 blink(currentVRM, currentInstanceId);
 
-                // handle window resizes
-                window.addEventListener( 'resize', onWindowResize, false );
-
-                function onWindowResize(){
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-
-                    renderer.setSize( window.innerWidth, window.innerHeight );
-                }
-
-                
-                if(currentVRM)
-                    console.debug(DEBUG_PREFIX,"VRM DEBUG",currentVRM)
-
-                /// DBG
-                var raycaster = new THREE.Raycaster();
-                var previousMouse = new THREE.Vector2();
-                var currentMouse = new THREE.Vector2();
-                var isDragging = false;
-                var isRotating = false;
-                var dragObject;
-
-                // events
-                document.addEventListener("pointermove", event => {
-                    currentMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-                    currentMouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-                    raycaster.setFromCamera(currentMouse, camera);
-                        
-                    if (isDragging) {
-                        const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
-                        const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
-                        const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
-
-                        dragObject.position.set( px, py+1, 0.0 );
-                        //currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).position.set( px, py, 0.0 );
-                    }
-
-                    if (isRotating) {
-                        const xDelta = (previousMouse.x - (event.clientX / window.innerWidth)) * 10;
-                        const yDelta = (previousMouse.y - (event.clientY / window.innerHeight)) * 10;
-
-                        //dragObject.rotateOnWorldAxis(new THREE.Vector3(1.0,0.0,0.0), yDelta)
-                        dragObject.rotation.set(dragObject.rotation.x - yDelta, dragObject.rotation.y - xDelta , 0.0 );
-                        //currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).rotation.set(currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).rotation.x - yDelta, currentVRM.humanoid.getNormalizedBoneNode( 'hips' ).rotation.y - xDelta , 0.0 );
-                    }
-
-                    previousMouse.x = (event.clientX / window.innerWidth);
-                    previousMouse.y = (event.clientY / window.innerHeight);
-                });
-
-                document.addEventListener("wheel", (event) => {
-                    event.preventDefault();
-
-                    var intersects = raycaster.intersectObjects([currentVRM.scene]);
-                    if (intersects.length > 0) {
-                        //controls.enabled = false;
-                        // Climb to VRM object
-                        dragObject = intersects[0].object;
-                        while (dragObject.parent.type != "Scene")
-                            dragObject = dragObject.parent;
-                        console.debug(DEBUG_PREFIX,"Scaling ",dragObject.name);
-                        // Restrict scale
-                        const scale = Math.min(Math.max(-0.1, event.deltaY * -0.01), 0.1);
-                        const y = dragObject.position.y;
-
-                        dragObject.scale.x += scale;
-                        dragObject.scale.y += scale;
-                        dragObject.scale.z += scale;
-                    }
-
-                } );
-                
-                document.addEventListener("pointerdown", (event) => {
-                    var intersects = raycaster.intersectObjects([currentVRM.scene]);
-                    if (intersects.length > 0) {
-                        //controls.enabled = false;
-                        // Climb to VRM object
-                        dragObject = intersects[0].object;
-                        while (dragObject.parent.type != "VRM_CONTAINER" && dragObject.parent.type != "Scene")
-                            dragObject = dragObject.parent;
-
-                        if (dragObject.name != "VRM_CONTAINER")
-                            return;
-
-                        if(event.pointerType === 'mouse' && event.button === 0){ 
-                            isDragging = true;
-                            isRotating = false;
-                            console.debug(DEBUG_PREFIX,"Dragging ",dragObject.name);
-                        }
-
-                        if(event.pointerType === 'mouse' && event.button === 1){ 
-                            isDragging = false;
-                            isRotating = true;
-                            console.debug(DEBUG_PREFIX,"Rotating ",dragObject.name);
-                        }
-                    }
-                } );
-
-                document.addEventListener("pointerup", () => {
-                    isDragging = false;
-                    isRotating = false;
-                    dragObject = null;
-                    //controls.enabled = true;
-                } );
-                /// DBG
                 
                 //console.debug(DEBUG_PREFIX,"VRM DEBUG",controls)
                 console.debug(DEBUG_PREFIX,"VRM DEBUG",scene)
@@ -591,3 +486,140 @@ async function talk(chat_id) {
     }
     isTalking = false;
 }
+
+// handle window resizes
+window.addEventListener( 'resize', onWindowResize, false );
+
+function onWindowResize(){
+    if (camera !== undefined && renderer !== undefined) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+}
+
+//--------------
+// Events
+//-------------
+
+// Select model for drag/rotate
+document.addEventListener("pointerdown", (event) => {
+    if (raycaster !== undefined && currentVRM !== undefined) {
+        var intersects = raycaster.intersectObjects([currentVRM.scene]);
+        if (intersects.length > 0) {
+            //controls.enabled = false;
+            // Climb to VRM object
+            dragObject = intersects[0].object;
+            while (dragObject.parent.type != "VRM_CONTAINER" && dragObject.parent.type != "Scene")
+                dragObject = dragObject.parent;
+
+            if (dragObject.name != "VRM_CONTAINER")
+                return;
+
+            // UI between mouse and canvas
+            const element = document.elementFromPoint(event.clientX, event.clientY);
+            if (element.id != VRM_CANVAS_ID)
+                return;
+
+            if(event.pointerType === 'mouse' && event.button === 0){
+                // Save mouse offset to avoid teleporting model to cursor
+                const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
+                const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
+                const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
+                mouseOffset = new THREE.Vector2(px - dragObject.position.x, py - dragObject.position.y);
+
+                isDragging = true;
+                isRotating = false;
+                console.debug(DEBUG_PREFIX,"Dragging ",dragObject.name);
+            }
+
+            if(event.pointerType === 'mouse' && event.button === 1){ 
+                isDragging = false;
+                isRotating = true;
+                console.debug(DEBUG_PREFIX,"Rotating ",dragObject.name);
+            }
+
+        }
+    }
+} );
+
+// Drop model
+document.addEventListener("pointerup", () => {
+    isDragging = false;
+    isRotating = false;
+    dragObject = undefined;
+    console.debug(DEBUG_PREFIX,"POINTERUP")
+} );
+
+document.addEventListener("pointermove", event => {
+    if (raycaster !== undefined && camera !== undefined) {
+        // init
+        if (previousMouse === undefined || currentMouse === undefined) {
+            previousMouse = new THREE.Vector2();
+            currentMouse = new THREE.Vector2();
+        }
+
+        // Get current mouse position
+        currentMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        currentMouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        raycaster.setFromCamera(currentMouse, camera);
+            
+        // Draggin model
+        if (isDragging) {
+            const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
+            const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
+            const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
+            dragObject.position.set( px-mouseOffset.x, py-mouseOffset.y, 0.0 );
+        }
+
+        // Rotating model
+        if (isRotating) {
+            const xDelta = (previousMouse.x - (event.clientX / window.innerWidth)) * 10;
+            const yDelta = (previousMouse.y - (event.clientY / window.innerHeight)) * 10;
+            dragObject.rotation.set(dragObject.rotation.x - yDelta, dragObject.rotation.y - xDelta , 0.0 );
+        }
+
+        // Save mouse position
+        previousMouse.x = (event.clientX / window.innerWidth);
+        previousMouse.y = (event.clientY / window.innerHeight);
+    }
+});
+
+document.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    var intersects = raycaster.intersectObjects([currentVRM.scene]);
+    if (intersects.length > 0) {
+        //controls.enabled = false;
+        // Climb to VRM object
+        dragObject = intersects[0].object;
+        while (dragObject.parent.type != "VRM_CONTAINER" && dragObject.parent.type != "Scene")
+                dragObject = dragObject.parent;
+
+        if (dragObject.name != "VRM_CONTAINER")
+            return;
+
+        // Restrict scale
+        let scaleDelta = 1.1;
+        if (event.deltaY > 0)
+            scaleDelta = 0.9;
+
+        // Save mouse offset to avoid teleporting model to cursor
+        //const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
+        //const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
+        //const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
+        //mouseOffset = new THREE.Vector2(px - dragObject.position.x, py - dragObject.position.y);
+
+        dragObject.scale.x *= scaleDelta;
+        dragObject.scale.y *= scaleDelta;
+        dragObject.scale.z *= scaleDelta;
+
+        dragObject.scale.x = Math.min(Math.max(dragObject.scale.x, MIN_SCALE), MAX_SCALE)
+        dragObject.scale.y = Math.min(Math.max(dragObject.scale.y, MIN_SCALE), MAX_SCALE)
+        dragObject.scale.z = Math.min(Math.max(dragObject.scale.z, MIN_SCALE), MAX_SCALE)
+
+        // TODO: restaure model offset to simulate zoom
+
+        console.debug(DEBUG_PREFIX,"Scale updated to",dragObject.scale.x)
+    }
+} );

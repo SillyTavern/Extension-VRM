@@ -8,7 +8,9 @@ export {
     CLASSIFY_EXPRESSIONS,
     FALLBACK_EXPRESSION,
     DEFAULT_EXPRESSION_MAPPING,
-    DEFAULT_MOTION_MAPPING
+    DEFAULT_MOTION_MAPPING,
+    MIN_SCALE,
+    MAX_SCALE
 }
 
 const MODULE_NAME = "VRM";
@@ -16,6 +18,8 @@ const VRM_MODEL_FOLDER = "live2d";
 const extensionFolderPath = `scripts/extensions/third-party/Extension-VRM`;
 const DEBUG_PREFIX = "<VRM module>"
 const VRM_CANVAS_ID = "vrm-canvas"
+const MIN_SCALE = 0.2
+const MAX_SCALE = 30
 
 const JS_LIBS = [
 "es-module-shims.js"
@@ -95,33 +99,33 @@ const DEFAULT_EXPRESSION_MAPPING = {
 }
 
 const DEFAULT_MOTION_MAPPING = {
-    "default": "assets/vrm/animation/st_default.fbx",
-    "admiration": "none",
-    "amusement": "none",
-    "anger": "none",
-    "annoyance": "none",
-    "approval": "none",
-    "caring": "none",
-    "confusion": "none",
-    "curiosity": "none",
-    "desire": "none",
-    "disappointment": "none",
-    "disapproval": "none",
-    "disgust": "none",
-    "embarrassment": "none",
-    "excitement": "none",
-    "fear": "none",
-    "gratitude": "none",
-    "grief": "none",
-    "joy": "none",
-    "love": "none",
-    "nervousness": "none",
-    "optimism": "none",
-    "pride": "none",
-    "realization": "none",
-    "relief": "none",
-    "remorse": "none",
-    "sadness": "none",
-    "surprise": "none",
-    "neutral": "none"
+    "default": "assets/vrm/animation/neutral.bvh",
+    "admiration": "assets/vrm/animation/admiration.bvh",
+    "amusement": "assets/vrm/animation/amusement.bvh",
+    "anger": "assets/vrm/animation/anger.bvh",
+    "annoyance": "assets/vrm/animation/annoyance.bvh",
+    "approval": "assets/vrm/animation/approval.bvh",
+    "caring": "assets/vrm/animation/caring.bvh",
+    "confusion": "assets/vrm/animation/confusion.bvh",
+    "curiosity": "assets/vrm/animation/curiosity.bvh",
+    "desire": "assets/vrm/animation/desire.bvh",
+    "disappointment": "assets/vrm/animation/disappointment.bvh",
+    "disapproval": "assets/vrm/animation/disapproval.bvh",
+    "disgust": "assets/vrm/animation/disgust.bvh",
+    "embarrassment": "assets/vrm/animation/embarrassment.bvh",
+    "excitement": "assets/vrm/animation/excitement.bvh",
+    "fear": "assets/vrm/animation/fear.bvh",
+    "gratitude": "assets/vrm/animation/gratitude.bvh",
+    "grief": "assets/vrm/animation/grief.bvh",
+    "joy": "assets/vrm/animation/joy.bvh",
+    "love": "assets/vrm/animation/love.bvh",
+    "nervousness": "assets/vrm/animation/nervousness.bvh",
+    "optimism": "assets/vrm/animation/optimism.bvh",
+    "pride": "assets/vrm/animation/pride.bvh",
+    "realization": "assets/vrm/animation/realization.bvh",
+    "relief": "assets/vrm/animation/relief.bvh",
+    "remorse": "assets/vrm/animation/remorse.bvh",
+    "sadness": "assets/vrm/animation/sadness.bvh",
+    "surprise": "assets/vrm/animation/surprise.bvh",
+    "neutral": "assets/vrm/animation/neutral.bvh"
 }

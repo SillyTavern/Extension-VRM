@@ -15,15 +15,12 @@ DONE:
 - mouth movement
     - basic text based
 - Basic model control move/rotate/scale
+    - dragging keep offset with mouse cursor
+    - should not work through ui
 
 TODO:
-- fix mouse control
-    - should not work through ui
-    - dragging keep offset with mouse cursor
-- Factorise code
 - Save model settings pos/rotate/scale
 - other kind of camera
-- default hand made animation when no animation playing
 - mouth movement
     - tts lip sync
 - blink smooth and adapt to current expression?
@@ -33,6 +30,7 @@ TODO:
     - model switch
     - only full load at start and on reload button?
 - 3D room
+- make it work with live2d on top of it
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";

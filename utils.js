@@ -57,7 +57,7 @@ function loadAnimationUi(type, use_default_settings, model_expressions, model_mo
     }
 
     for (const motion of model_motions) {
-        const name = motion.substring(motion.lastIndexOf('/')+1).replace(".fbx","");
+        const name = motion.substring(motion.lastIndexOf('/')+1).replace(".fbx","").replace(".bvh","");
         $(`#${motion_select_id}`).append(new Option(name, motion));
     }
 
