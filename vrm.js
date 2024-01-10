@@ -599,6 +599,11 @@ document.addEventListener("wheel", (event) => {
         if (dragObject.name != "VRM_CONTAINER" || event.deltaY == 0)
             return;
 
+        // UI between mouse and canvas
+        const element = document.elementFromPoint(event.clientX, event.clientY);
+        if (element.id != VRM_CANVAS_ID)
+            return;
+
         // Restrict scale
         let scaleDelta = 1.1;
         if (event.deltaY > 0)
