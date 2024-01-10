@@ -596,7 +596,7 @@ document.addEventListener("wheel", (event) => {
         while (dragObject.parent.type != "VRM_CONTAINER" && dragObject.parent.type != "Scene")
                 dragObject = dragObject.parent;
 
-        if (dragObject.name != "VRM_CONTAINER")
+        if (dragObject.name != "VRM_CONTAINER" || event.deltaY == 0)
             return;
 
         // Restrict scale
