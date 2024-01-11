@@ -85,6 +85,7 @@ async function loadVRM() {
     currentExpression = "neutral";
     currentMotion = "none";
     currentInstanceId++;
+    isTalking = false; // TODO: generalize
 
     // Delete the canvas
     if (document.getElementById(VRM_CANVAS_ID) !== null)
@@ -538,6 +539,7 @@ async function talk(chat_id) {
         while (isTalking) {
             abortTalking = true;
             await delay(100);
+            console.debug(DEBUG_PREFIX,"WAITING TALK")
         }
         abortTalking = false;
         currentVRM.expressionManager.setValue("aa",1);
