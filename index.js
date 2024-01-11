@@ -20,6 +20,8 @@ DONE:
 - Save model settings pos/rotate/scale
 - Fix animation chaining / crossfading / default loop
 - loop option for animations command
+- Consider animation as group Idle.bvh/Idle1.bvh/Idle2.bvh appear as "Idle" group, play one randomly
+- Command by default play requested animation not the group
 
 TODO:
 - check talk expression collide
@@ -35,6 +37,7 @@ TODO:
 - make it work with vrm on top of it
 - Model Gallery
 - Light control
+- Error message for wrong animation files
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
@@ -201,6 +204,7 @@ async function setExpressionSlashCommand(_, expression) {
 // Example /vrmmotion anger
 async function setMotionSlashCommand(args, motion) {
     let loop = false;
+    let random = false;
     if (!motion && !args["motion"]) {
         console.log('No motion provided');
         return;
@@ -212,8 +216,11 @@ async function setMotionSlashCommand(args, motion) {
     if (args["loop"])
         loop = args["loop"].toLowerCase() === "true";
 
+    if (args["random"])
+        random = args["random"].toLowerCase() === "true";
+
     motion = motion.trim();
-    console.debug(DEBUG_PREFIX,'Command motion received for', motion,"loop=",loop);
+    console.debug(DEBUG_PREFIX,'Command motion received for', motion,"loop=",loop, "random=",random);
 
     const fuse = new Fuse(animations_files);
     const results = fuse.search(motion);
@@ -221,7 +228,7 @@ async function setMotionSlashCommand(args, motion) {
 
     if (fileItem)
     {
-        await setMotion(fileItem, loop, true);
+        await setMotion(fileItem, loop, true, random);
     }
     else{
         console.debug(DEBUG_PREFIX,'Motion not found in', animations_files);

@@ -46,6 +46,7 @@ export {
 let characters_list = [];
 let characters_models = {};
 let animations_files = [];
+let animations_groups = [];
 
 async function onEnabledClick() {
     extension_settings.vrm.enabled = $('#vrm_enabled_checkbox').is(':checked');
@@ -276,7 +277,7 @@ async function loadModelUi(use_default_settings) {
     console.debug(DEBUG_PREFIX, 'loading settings of model:', model);
 
     let model_expressions = [];
-    let model_motions = animations_files;
+    let model_motions = animations_groups;
 
     for (const i of Object.keys(model.expressionManager.expressionMap) ?? []) {
         if (!model.expressionManager.blinkExpressionNames.includes(i) && !model.expressionManager.mouthExpressionNames.includes(i) && !model.expressionManager.lookAtExpressionNames.includes(i))
@@ -394,7 +395,7 @@ async function updateExpressionMapping(expression) {
 
     setExpression(model_expression);
 
-    setMotion(model_motion, true, true);
+    setMotion(value=model_motion, loop=true, force=true, random=true);
     console.debug(DEBUG_PREFIX, 'Updated expression mapping:', expression, extension_settings.vrm.model_settings[model]['classify_mapping'][expression]);
 }
 
@@ -466,8 +467,12 @@ async function updateCharactersModels(refreshButton = false) {
     }
 
     animations_files = assets['vrm']['animation'];
-    for(const i in animations_files)
+    for(const i in animations_files) {
         animations_files[i] = animations_files[i].toLowerCase();
+        const animation_group_name = animations_files[i].replace(/\.[^/.]+$/, "").replace(/\d+$/, "");
+        if (!animations_groups.includes(animation_group_name))
+            animations_groups.push(animation_group_name);
+    }
 
     console.debug(DEBUG_PREFIX, 'Updated models to:', characters_models, animations_files);
     $('#vrm_character_select').trigger('change');

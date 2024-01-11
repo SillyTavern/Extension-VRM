@@ -17,11 +17,19 @@ import {
     ANIMATION_FADE_TIME
 } from "./constants.js";
 
-import { currentChatMembers } from './utils.js';
+import {
+    currentChatMembers,
+} from './utils.js';
+
 import {
     delay,
     trimToEndSentence,
     trimToStartSentence } from '../../../utils.js';
+
+import {
+    animations_files
+} from './ui.js';
+
 import { expression } from './lib/jsm/nodes/Nodes.js';
 import { ThreeMFLoader } from './lib/jsm/loaders/3MFLoader.js';
 
@@ -276,7 +284,7 @@ async function setExpression( value ) {
         currentVRM.expressionManager.setValue(currentExpression, intensity);
 }
 
-async function setMotion( value, loop=false, force=false ) {
+async function setMotion( value, loop=false, force=false, random=true ) {
     console.debug(DEBUG_PREFIX,"Switch motion from",currentMotion,"to",value,"force=",force);
     let clip = undefined;
 
@@ -288,6 +296,18 @@ async function setMotion( value, loop=false, force=false ) {
         }
         currentMotion = "none";
         return;
+    }
+
+    // Pick random animationX
+    const filename = value.replace(/\.[^/.]+$/, "").replace(/\d+$/, "");
+    if (random) {
+        let same_motion = []
+        for(const i of animations_files) {
+            if (i.replace(/\.[^/.]+$/, "").replace(/\d+$/, "") == filename)
+            same_motion.push(i)
+        }
+        value = same_motion[Math.floor(Math.random() * same_motion.length)];
+        console.debug(DEBUG_PREFIX,"Pick a random animation among",same_motion,":",value);
     }
 
     // new animation
