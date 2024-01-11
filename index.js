@@ -19,9 +19,9 @@ DONE:
     - should not work through ui
 - Save model settings pos/rotate/scale
 - Fix animation chaining / crossfading / default loop
+- loop option for animations command
 
 TODO:
-- loop option for animations
 - check talk expression collide
 - other kind of camera
 - mouth movement
@@ -34,6 +34,7 @@ TODO:
 - 3D room
 - make it work with vrm on top of it
 - Model Gallery
+- Light control
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
@@ -198,11 +199,18 @@ async function setExpressionSlashCommand(_, expression) {
 }
 
 // Example /vrmmotion anger
-async function setMotionSlashCommand(_, motion) {
-    if (!motion) {
+async function setMotionSlashCommand(args, motion) {
+    let loop = false;
+    if (!motion && !args[0]) {
         console.log('No motion provided');
         return;
     }
+
+    if (args["motion"])
+        motion = args["motion"];
+
+    if (args["loop"])
+        loop = args["loop"];
 
     motion = motion.trim();
     console.debug(DEBUG_PREFIX,'Command motion received for', motion);
@@ -213,7 +221,7 @@ async function setMotionSlashCommand(_, motion) {
 
     if (fileItem)
     {
-        await setMotion(fileItem);
+        await setMotion(fileItem, loop, true);
     }
     else{
         console.debug(DEBUG_PREFIX,'Motion not found in', animations_files);
