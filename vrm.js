@@ -64,6 +64,7 @@ let currentMotion = "none";
 let currentInstanceId = 0;
 
 let isTalking = false;
+
 let clock = undefined;
 
 let currentVRMHipsHeight = undefined;
@@ -75,6 +76,7 @@ let currentMouse = undefined;
 let mouseOffset = undefined;
 let isDragging = false;
 let isRotating = false;
+let isScaling = false;
 let dragObject = undefined;
 
 async function loadVRM() {
@@ -596,7 +598,6 @@ function onWindowResize(){
 //--------------
 // Events
 //-------------
-
 // Select model for drag/rotate
 document.addEventListener("pointerdown", (event) => {
     if (raycaster !== undefined && currentVRM !== undefined) {
@@ -616,7 +617,11 @@ document.addEventListener("pointerdown", (event) => {
             if (element.id != VRM_CANVAS_ID)
                 return;
 
-            if(event.pointerType === 'mouse' && event.button === 0){
+            const isLeftClick = event.pointerType === 'mouse' && event.button === 0;
+            const isMiddleClick = event.pointerType === 'mouse' && event.button === 1;
+
+            // Move
+            if(isLeftClick && !event.ctrlKey && !event.shiftKey){
                 // Save mouse offset to avoid teleporting model to cursor
                 const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
                 const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
@@ -625,13 +630,21 @@ document.addEventListener("pointerdown", (event) => {
 
                 isDragging = true;
                 isRotating = false;
+                isScaling = false;
                 console.debug(DEBUG_PREFIX,"Dragging ",dragObject.name);
             }
 
-            if(event.pointerType === 'mouse' && event.button === 1){ 
+            // Rotation
+            if(isMiddleClick || (isLeftClick && event.ctrlKey && !event.shiftKey)){ 
                 isDragging = false;
                 isRotating = true;
+                isScaling = false;
                 console.debug(DEBUG_PREFIX,"Rotating ",dragObject.name);
+            }
+
+            // Scale
+            if(isLeftClick && event.shiftKey && !event.ctrlKey){
+                isScaling = true;
             }
 
         }
@@ -642,6 +655,7 @@ document.addEventListener("pointerdown", (event) => {
 document.addEventListener("pointerup", () => {
     isDragging = false;
     isRotating = false;
+    isScaling = false;
     dragObject = undefined;
     console.debug(DEBUG_PREFIX,"POINTERUP")
 } );
@@ -690,6 +704,17 @@ document.addEventListener("pointermove", event => {
             saveSettingsDebounced();
         }
 
+        // Scaling
+        if (isScaling) {
+            const yDelta = (previousMouse.y - (event.clientY / window.innerHeight)) * 10;
+            
+            console.debug(DEBUG_PREFIX,"SCALING delta",yDelta)
+            let scaleDelta = 1.05;
+            if (yDelta < 0)
+                scaleDelta = 0.95;
+            rescale(dragObject, scaleDelta);
+        }
+
         // Save mouse position
         previousMouse.x = (event.clientX / window.innerWidth);
         previousMouse.y = (event.clientY / window.innerHeight);
@@ -719,31 +744,35 @@ document.addEventListener("wheel", (event) => {
         if (event.deltaY > 0)
             scaleDelta = 0.9;
 
-        // Save mouse offset to avoid teleporting model to cursor
-        //const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
-        //const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
-        //const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
-        //mouseOffset = new THREE.Vector2(px - dragObject.position.x, py - dragObject.position.y);
-
-        dragObject.scale.x *= scaleDelta;
-        dragObject.scale.y *= scaleDelta;
-        dragObject.scale.z *= scaleDelta;
-
-        dragObject.scale.x = Math.min(Math.max(dragObject.scale.x, MIN_SCALE), MAX_SCALE)
-        dragObject.scale.y = Math.min(Math.max(dragObject.scale.y, MIN_SCALE), MAX_SCALE)
-        dragObject.scale.z = Math.min(Math.max(dragObject.scale.z, MIN_SCALE), MAX_SCALE)
-
-        // Update saved settings
-        extension_settings.vrm.model_settings[currentVRMPath]['scale'] = (dragObject.scale.x).toFixed(2);
-        $('#vrm_model_scale').val(extension_settings.vrm.model_settings[currentVRMPath]['scale']);
-        $('#vrm_model_scale_value').text(extension_settings.vrm.model_settings[currentVRMPath]['scale']);
-        saveSettingsDebounced();
-
-        // TODO: restaure model offset to simulate zoom
-
-        console.debug(DEBUG_PREFIX,"Scale updated to",dragObject.scale.x);
+        rescale(dragObject, scaleDelta);
     }
 } );
+
+function rescale(object, scaleDelta) {
+    // Save mouse offset to avoid teleporting model to cursor
+    //const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
+    //const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
+    //const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
+    //mouseOffset = new THREE.Vector2(px - dragObject.position.x, py - dragObject.position.y);
+
+    object.scale.x *= scaleDelta;
+    object.scale.y *= scaleDelta;
+    object.scale.z *= scaleDelta;
+
+    object.scale.x = Math.min(Math.max(object.scale.x, MIN_SCALE), MAX_SCALE)
+    object.scale.y = Math.min(Math.max(object.scale.y, MIN_SCALE), MAX_SCALE)
+    object.scale.z = Math.min(Math.max(object.scale.z, MIN_SCALE), MAX_SCALE)
+
+    // Update saved settings
+    extension_settings.vrm.model_settings[currentVRMPath]['scale'] = (object.scale.x).toFixed(2);
+    $('#vrm_model_scale').val(extension_settings.vrm.model_settings[currentVRMPath]['scale']);
+    $('#vrm_model_scale_value').text(extension_settings.vrm.model_settings[currentVRMPath]['scale']);
+    saveSettingsDebounced();
+
+    // TODO: restaure model offset to simulate zoom
+
+    console.debug(DEBUG_PREFIX,"Scale updated to",object.scale.x);
+}
 
 async function updateModel(model_path) {
     currentVRMContainer.scale.x = extension_settings.vrm.model_settings[model_path]['scale'];

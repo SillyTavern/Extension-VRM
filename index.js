@@ -24,20 +24,23 @@ DONE:
 - Command by default play requested animation not the group
 
 TODO:
-- check talk expression collide
-- other kind of camera
-- mouth movement
-    - tts lip sync
-- blink smooth and adapt to current expression?
-- group support
-- Optimize avoid full reload when not needed
-    - model switch
-    - only full load at start and on reload button?
-- 3D room
-- make it work with vrm on top of it
-- Model Gallery
-- Light control
-- Error message for wrong animation files
+    v1.0:
+        - check talk expression collide
+        - mouth movement
+            - tts lip sync
+        - blink smooth and adapt to current expression?
+        - group support
+        - Optimize avoid full reload when not needed
+            - model switch
+            - only full load at start and on reload button?
+        - Light control
+        - Error message for wrong animation files
+    v2.0:
+        - other kind of camera
+        - 3D room
+        - make it work with live2d on top of it
+        - Model Gallery
+
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
