@@ -17,16 +17,17 @@ DONE:
 - Basic model control move/rotate/scale
     - dragging keep offset with mouse cursor
     - should not work through ui
+- Save model settings pos/rotate/scale
+- Fix animation chaining / crossfading / default loop
 
 TODO:
-- Save model settings pos/rotate/scale
+- loop option for animations
 - check talk expression collide
 - other kind of camera
 - mouth movement
     - tts lip sync
 - blink smooth and adapt to current expression?
 - group support
-- loop option for animations
 - Optimize avoid full reload when not needed
     - model switch
     - only full load at start and on reload button?

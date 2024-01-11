@@ -13,7 +13,8 @@ import {
     VRM_CANVAS_ID,
     FALLBACK_EXPRESSION,
     MIN_SCALE,
-    MAX_SCALE
+    MAX_SCALE,
+    ANIMATION_FADE_TIME
 } from "./constants.js";
 
 import { currentChatMembers } from './utils.js';
@@ -49,12 +50,15 @@ let currentVRM = undefined;
 let currentVRMContainer = undefined;
 let currentVRMPath = undefined;
 let currentMixer = undefined;
+let currentAnimation = undefined;
 let currentExpression = "neutral";
-let currentMotion = undefined;
+let currentMotion = "none";
 let currentInstanceId = 0;
-let isTalking = false;
 
+let isTalking = false;
 let clock = undefined;
+
+let currentVRMHipsHeight = undefined;
 
 // Mouse controls
 let raycaster = new THREE.Raycaster();
@@ -71,7 +75,7 @@ async function loadVRM() {
     currentVRMContainer = undefined;
     currentVRMPath = undefined;
     currentExpression = "neutral";
-    currentMotion = undefined;
+    currentMotion = "none";
     currentInstanceId++;
 
     // Delete the canvas
@@ -159,6 +163,10 @@ async function loadVRM() {
                 containerOffset.add(vrm.scene)
                 currentVRMContainer.add(containerOffset)
                 scene.add( currentVRMContainer );
+
+                const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+                const vrmRootY = vrm.scene.position.y;
+                currentVRMHipsHeight = Math.abs( vrmHipsY - vrmRootY );
                 
                 // Grid debuging helpers
                 const gridHelper = new THREE.GridHelper( 20, 20 );
@@ -199,6 +207,15 @@ async function loadVRM() {
                     renderer.render( scene, camera );
                 }
 
+                // un-T-pose
+                console.debug(DEBUG_PREFIX,"VRM",vrm);
+                //vrm.humanoid.getNormalizedBoneNode( "hips" ).rotation.y = Math.PI;
+                vrm.springBoneManager.reset();
+                vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = -250;
+                vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = 0.2;
+                vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = 250;
+                vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = -0.2;
+
                 animate();
 
                 // Load default expression/motion
@@ -211,14 +228,10 @@ async function loadVRM() {
                 }
                 if (motion !== undefined && motion != "none") {
                     console.debug(DEBUG_PREFIX,"Set default motion to",motion);
-                    setMotion(motion);
+                    setMotion(motion, true);
                 }
 
-                setExpression(currentExpression);
-                setMotion(currentMotion);
-
                 blink(currentVRM, currentInstanceId);
-
                 
                 //console.debug(DEBUG_PREFIX,"VRM DEBUG",controls)
                 console.debug(DEBUG_PREFIX,"VRM DEBUG",scene)
@@ -255,42 +268,81 @@ async function setExpression( value ) {
         currentVRM.expressionManager.setValue(currentExpression, intensity);
 }
 
-async function setMotion( value ) {
-    console.debug(DEBUG_PREFIX,"Switch motion from",currentMotion,"to",value);
+async function setMotion( value, loop=false, force=false ) {
+    console.debug(DEBUG_PREFIX,"Switch motion from",currentMotion,"to",value,"force=",force);
+    let clip = undefined;
 
-    if (value == "none" && currentMixer !== undefined)
-        currentMixer.timeScale = 0;
+    // Disable animation
+    if (value == "none") {
+        if (currentAnimation !== undefined) {
+            currentAnimation.fadeOut(0.2);
+            currentAnimation = undefined;
+        }
+        currentMotion = "none";
+        return;
+    }
 
-    if (currentVRM) {
-        if (currentMotion != value) {
-            currentMotion = value;
+    // new animation
+    if (currentMotion != value || force) {
+        currentMotion = value;
 
+        if (currentVRM) {
             // create AnimationMixer for VRM
-            currentMixer = new THREE.AnimationMixer( currentVRM.scene );
+            if (currentMixer === undefined)
+                currentMixer = new THREE.AnimationMixer( currentVRM.scene );
 
             // Mixamo animation
             if (currentMotion.endsWith(".fbx")) {
                 console.debug(DEBUG_PREFIX,"Loading fbx file");
 
                 // Load animation
-                loadMixamoAnimation(currentMotion, currentVRM).then( ( clip ) => {
-                    // Apply the loaded animation to mixer and play
-                    currentMixer.timeScale = 1.0;
-                    currentMixer.clipAction( clip ).play();
-                    console.debug(DEBUG_PREFIX,"VRM CLIP",clip);
-                } );
+                clip = await loadMixamoAnimation(currentMotion, currentVRM, currentVRMHipsHeight);
             }
-
+            else
             if (currentMotion.endsWith(".bvh")) {
                 console.debug(DEBUG_PREFIX,"Loading bvh file");
-                const clip = await loadBVHAnimation(currentMotion, currentVRM);
-
-                // create AnimationMixer for VRM
-                currentMixer = new THREE.AnimationMixer( currentVRM.scene );
-                currentMixer.timeScale = 1.0;
-                currentMixer.clipAction( clip ).play();
-                console.debug(DEBUG_PREFIX,"VRM CLIP",clip);
+                clip = await loadBVHAnimation(currentMotion, currentVRM, currentVRMHipsHeight);
             }
+            else {
+                console.debug(DEBUG_PREFIX,"UNSUPORTED animation file"); // TODO throw error
+                return;
+            }
+
+            // create AnimationMixer for VRM
+            const newAnimation = currentMixer.clipAction( clip );
+
+            // Fade out current animation
+            if ( currentAnimation !== undefined ) {
+                currentAnimation.fadeOut( ANIMATION_FADE_TIME );
+                currentAnimation.overwrited = true;
+                console.debug(DEBUG_PREFIX,"Fade out previous animation");
+            }
+            
+            // Fade in new animation
+            newAnimation
+                .reset()
+                .setEffectiveTimeScale( 1 )
+                .setEffectiveWeight( 1 )
+                .fadeIn( ANIMATION_FADE_TIME )
+                .play();
+            newAnimation.overwrited = false;
+
+            // Fade out animation after full loop
+            if (!loop) {
+                console.debug(DEBUG_PREFIX,"DURATION:",clip.duration*1000 - ANIMATION_FADE_TIME*1000)
+
+                setTimeout(() => {
+                    if (!newAnimation.overwrited) {
+                        newAnimation.fadeOut(ANIMATION_FADE_TIME);
+                        setTimeout(async () => {
+                            setMotion(extension_settings.vrm.model_settings[currentVRMPath]["animation_default"]["motion"], true);
+                        }, ANIMATION_FADE_TIME+0.1);
+                    }
+                }, clip.duration*1000);
+            }
+
+            currentAnimation = newAnimation;
+            console.debug(DEBUG_PREFIX,"VRM animation",currentAnimation);
         }
     }
 }

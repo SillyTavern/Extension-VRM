@@ -77,7 +77,7 @@ const mixamoVRMRigMap = {
  * @param {vrm} vrm A target VRM
  * @returns {Promise<THREE.AnimationClip>} The converted AnimationClip
  */
-function loadMixamoAnimation( url, vrm) {
+function loadMixamoAnimation( url, vrm, currentVRMHipsHeight) {
 
 	const loader = new FBXLoader(); // A loader which loads FBX
 	return loader.loadAsync( url ).then( ( asset ) => {
@@ -93,9 +93,9 @@ function loadMixamoAnimation( url, vrm) {
 
 		// Adjust with reference to hips height.
 		const motionHipsHeight = asset.getObjectByName( 'mixamorigHips' ).position.y;
-		const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
-		const vrmRootY = vrm.scene.position.y;
-		const vrmHipsHeight = Math.abs( vrmHipsY - vrmRootY );
+		//const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+		//const vrmRootY = vrm.scene.position.y;
+		const vrmHipsHeight = currentVRMHipsHeight;//Math.abs( vrmHipsY - vrmRootY );
 		const hipsPositionScale = vrmHipsHeight / motionHipsHeight;
 
 		clip.tracks.forEach( ( track ) => {
@@ -174,7 +174,7 @@ function loadMixamoAnimation( url, vrm) {
  * @param {VRM} vrm A target VRM
  * @returns {Promise<THREE.AnimationClip>} The converted AnimationClip
  */
-function loadBVHAnimation( url, vrm ) {
+function loadBVHAnimation( url, vrm, currentVRMHipsHeight ) {
     const loader = new BVHLoader();
     return loader.loadAsync( url ).then( ( result ) => {
         
@@ -184,7 +184,7 @@ function loadBVHAnimation( url, vrm ) {
         skeletonHelper.name = "BVHtest";
 		const clip = result.clip; 
 
-        console.debug(DEBUG_PREFIX,"Loaded CLIP", clip);
+        //console.debug(DEBUG_PREFIX,"Loaded CLIP", clip);
 
 		const tracks = []; // KeyframeTracks compatible with VRM will be added here
 
@@ -195,12 +195,12 @@ function loadBVHAnimation( url, vrm ) {
 
 		// Adjust with reference to hips height.
 		const motionHipsHeight = result.skeleton.getBoneByName("hips").position.y;
-		const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
-		const vrmRootY = vrm.scene.position.y;
-		const vrmHipsHeight = Math.abs( vrmHipsY - vrmRootY );
+		//const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+		//const vrmRootY = vrm.scene.position.y;
+		const vrmHipsHeight = currentVRMHipsHeight;//Math.abs( vrmHipsY - vrmRootY );
 		const hipsPositionScale = vrmHipsHeight / motionHipsHeight;
 
-		console.debug("TESSSST",vrmHipsHeight, motionHipsHeight)
+		//console.debug("TESSSST",vrmHipsHeight, motionHipsHeight)
 
 		clip.tracks.forEach( ( track ) => {
 
@@ -254,18 +254,13 @@ function loadBVHAnimation( url, vrm ) {
 					);
 
 				} else if ( track instanceof THREE.VectorKeyframeTrack ) {
-
 					const value = track.values.map( ( v, i ) => ( vrm.meta?.metaVersion === '0' && i % 3 !== 1 ? - v : v ) * hipsPositionScale );
-					console.debug("DEBUGUUGUGU",track)
 					tracks.push( new THREE.VectorKeyframeTrack( `${vrmNodeName}.${propertyName}`, track.times, value ) );
-
 				}
 
 			}
 
 		} );
-
-        console.debug(DEBUG_PREFIX,"FINISHED LOADING BVH:",tracks);
 
 		return new THREE.AnimationClip( 'vrmAnimationBVH', clip.duration, tracks );
 

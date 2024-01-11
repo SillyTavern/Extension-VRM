@@ -10,7 +10,8 @@ export {
     DEFAULT_EXPRESSION_MAPPING,
     DEFAULT_MOTION_MAPPING,
     MIN_SCALE,
-    MAX_SCALE
+    MAX_SCALE,
+    ANIMATION_FADE_TIME
 }
 
 const MODULE_NAME = "VRM";
@@ -20,6 +21,7 @@ const DEBUG_PREFIX = "<VRM module>"
 const VRM_CANVAS_ID = "vrm-canvas"
 const MIN_SCALE = 0.2
 const MAX_SCALE = 30
+const ANIMATION_FADE_TIME = 0.2
 
 const JS_LIBS = [
 "es-module-shims.js"

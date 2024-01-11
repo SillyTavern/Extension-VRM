@@ -161,7 +161,7 @@ async function onModelChange() {
     if (extension_settings.vrm.model_settings[model_path] === undefined) {
         use_default_settings = true;
         extension_settings.vrm.model_settings[model_path] = {
-            'scale': 2.0,
+            'scale': 3.0,
             'x': 0.0,
             'y': 0.0,
             'rx': 0.0,
@@ -388,15 +388,13 @@ async function updateExpressionMapping(expression) {
     const model = String($('#vrm_model_select').val());
     const model_expression = $(`#vrm_expression_select_${expression}`).val();
     const model_motion = $(`#vrm_motion_select_${expression}`).val();
-    const is_new_motion = currentMotion != model_motion;
 
     extension_settings.vrm.model_settings[model]['classify_mapping'][expression] = { 'expression': model_expression, 'motion': model_motion };
     saveSettingsDebounced();
 
     setExpression(model_expression);
 
-    if (is_new_motion)
-        setMotion(model_motion);
+    setMotion(model_motion, true, true);
     console.debug(DEBUG_PREFIX, 'Updated expression mapping:', expression, extension_settings.vrm.model_settings[model]['classify_mapping'][expression]);
 }
 
