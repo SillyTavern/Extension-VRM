@@ -31,7 +31,8 @@ export {
     setExpression,
     setMotion,
     updateExpression,
-    talk
+    talk,
+    updateModel
 }
 
 // Globals
@@ -46,6 +47,7 @@ let light = undefined;
 // gltf and vrm
 let currentVRM = undefined;
 let currentVRMContainer = undefined;
+let currentVRMPath = undefined;
 let currentMixer = undefined;
 let currentExpression = "neutral";
 let currentMotion = undefined;
@@ -66,6 +68,8 @@ let dragObject = undefined;
 async function loadVRM() {
     currentMixer = undefined;
     currentVRM = undefined;
+    currentVRMContainer = undefined;
+    currentVRMPath = undefined;
     currentExpression = "neutral";
     currentMotion = undefined;
     currentInstanceId++;
@@ -124,6 +128,7 @@ async function loadVRM() {
     if (current_characters.length > 0 && extension_settings.vrm.character_model_mapping[current_characters[0]] !== undefined) {
         console.debug(DEBUG_PREFIX,current_characters, extension_settings.vrm.character_model_mapping);
         const model_path = extension_settings.vrm.character_model_mapping[current_characters[0]];
+        currentVRMPath = model_path;
         console.debug(DEBUG_PREFIX,"Loading VRM model",model_path);
 
         await loader.load(
@@ -162,6 +167,8 @@ async function loadVRM() {
                 scene.add( axesHelper );
                 gridHelper.visible = extension_settings.vrm.show_grid;
                 axesHelper.visible = extension_settings.vrm.show_grid;
+
+                updateModel(model_path);
 
                 // animate
                 function animate() {
@@ -241,8 +248,11 @@ async function setExpression( value ) {
     if (currentVRM)
         currentVRM.expressionManager.setValue(currentExpression, 0.0);
     currentExpression = value;
+    let intensity = 1.0
+    if (isTalking)
+        intensity = 0.25
     if (currentVRM)
-        currentVRM.expressionManager.setValue(currentExpression, 1.0);
+        currentVRM.expressionManager.setValue(currentExpression, intensity);
 }
 
 async function setMotion( value ) {
@@ -571,6 +581,14 @@ document.addEventListener("pointermove", event => {
             const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
             const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
             dragObject.position.set( px-mouseOffset.x, py-mouseOffset.y, 0.0 );
+
+            extension_settings.vrm.model_settings[currentVRMPath]['x'] = (dragObject.position.x).toFixed(2);
+            extension_settings.vrm.model_settings[currentVRMPath]['y'] = (dragObject.position.y).toFixed(2);
+            $('#vrm_model_position_x').val(extension_settings.vrm.model_settings[currentVRMPath]['x']);
+            $('#vrm_model_position_x_value').text(extension_settings.vrm.model_settings[currentVRMPath]['x']);
+            $('#vrm_model_position_y').val(extension_settings.vrm.model_settings[currentVRMPath]['y']);
+            $('#vrm_model_position_y_value').text(extension_settings.vrm.model_settings[currentVRMPath]['y']);
+            saveSettingsDebounced();
         }
 
         // Rotating model
@@ -578,6 +596,14 @@ document.addEventListener("pointermove", event => {
             const xDelta = (previousMouse.x - (event.clientX / window.innerWidth)) * 10;
             const yDelta = (previousMouse.y - (event.clientY / window.innerHeight)) * 10;
             dragObject.rotation.set(dragObject.rotation.x - yDelta, dragObject.rotation.y - xDelta , 0.0 );
+
+            extension_settings.vrm.model_settings[currentVRMPath]['rx'] = (dragObject.rotation.x).toFixed(2);
+            extension_settings.vrm.model_settings[currentVRMPath]['ry'] = (dragObject.rotation.y).toFixed(2);
+            $('#vrm_model_rotation_x').val(extension_settings.vrm.model_settings[currentVRMPath]['rx']);
+            $('#vrm_model_rotation_x_value').text(extension_settings.vrm.model_settings[currentVRMPath]['rx']);
+            $('#vrm_model_rotation_y').val(extension_settings.vrm.model_settings[currentVRMPath]['ry']);
+            $('#vrm_model_rotation_y_value').text(extension_settings.vrm.model_settings[currentVRMPath]['ry']);
+            saveSettingsDebounced();
         }
 
         // Save mouse position
@@ -623,8 +649,33 @@ document.addEventListener("wheel", (event) => {
         dragObject.scale.y = Math.min(Math.max(dragObject.scale.y, MIN_SCALE), MAX_SCALE)
         dragObject.scale.z = Math.min(Math.max(dragObject.scale.z, MIN_SCALE), MAX_SCALE)
 
+        // Update saved settings
+        extension_settings.vrm.model_settings[currentVRMPath]['scale'] = (dragObject.scale.x).toFixed(2);
+        $('#vrm_model_scale').val(extension_settings.vrm.model_settings[currentVRMPath]['scale']);
+        $('#vrm_model_scale_value').text(extension_settings.vrm.model_settings[currentVRMPath]['scale']);
+        saveSettingsDebounced();
+
         // TODO: restaure model offset to simulate zoom
 
-        console.debug(DEBUG_PREFIX,"Scale updated to",dragObject.scale.x)
+        console.debug(DEBUG_PREFIX,"Scale updated to",dragObject.scale.x);
     }
 } );
+
+async function updateModel(model_path) {
+    currentVRMContainer.scale.x = extension_settings.vrm.model_settings[model_path]['scale'];
+    currentVRMContainer.scale.y = extension_settings.vrm.model_settings[model_path]['scale'];
+    currentVRMContainer.scale.z = extension_settings.vrm.model_settings[model_path]['scale'];
+
+    currentVRMContainer.position.x = (extension_settings.vrm.model_settings[model_path]['x']);
+    currentVRMContainer.position.y = (extension_settings.vrm.model_settings[model_path]['y']);
+    currentVRMContainer.position.z = 0.0; // In case somehow it get away from 0
+
+    currentVRMContainer.rotation.x = extension_settings.vrm.model_settings[model_path]['rx'];
+    currentVRMContainer.rotation.y = extension_settings.vrm.model_settings[model_path]['ry'];
+    currentVRMContainer.rotation.z = 0.0; // In case somehow it get away from 0
+
+    console.debug(DEBUG_PREFIX,"Updated model:")
+    console.debug(DEBUG_PREFIX,"Scale:",currentVRMContainer.scale)
+    console.debug(DEBUG_PREFIX,"Position:",currentVRMContainer.position)
+    console.debug(DEBUG_PREFIX,"Rotation:",currentVRMContainer.rotation)
+}

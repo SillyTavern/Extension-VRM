@@ -12,7 +12,8 @@ import {
     currentVRM,
     currentMotion,
     setExpression,
-    setMotion
+    setMotion,
+    updateModel
 } from "./vrm.js";
 
 import {
@@ -35,6 +36,9 @@ export {
     onModelRefreshClick,
     onModelChange,
     onModelResetClick,
+    onModelScaleChange,
+    onModelPositionChange,
+    onModelRotationChange,
     onAnimationMappingChange,
     animations_files
 };
@@ -157,6 +161,11 @@ async function onModelChange() {
     if (extension_settings.vrm.model_settings[model_path] === undefined) {
         use_default_settings = true;
         extension_settings.vrm.model_settings[model_path] = {
+            'scale': 2.0,
+            'x': 0.0,
+            'y': 0.0,
+            'rx': 0.0,
+            'ry': 0.0,
             'animation_default': { 'expression': 'none', 'motion': 'none' },
             //'animation_click': { 'expression': 'none', 'motion': 'none', 'message': '' },
             'classify_mapping': {},
@@ -187,6 +196,34 @@ async function onModelChange() {
     
     $('#vrm_model_settings').show();
     $('#vrm_model_loading').hide();
+}
+
+async function onModelScaleChange() {
+    const model_path = String($('#vrm_model_select').val());
+    extension_settings.vrm.model_settings[model_path]['scale'] = Number($('#vrm_model_scale').val());
+    $('#vrm_model_scale_value').text(extension_settings.vrm.model_settings[model_path]['scale']);
+    saveSettingsDebounced();
+    updateModel(model_path);
+}
+
+async function onModelPositionChange() {
+    const model_path = String($('#vrm_model_select').val());
+    extension_settings.vrm.model_settings[model_path]['x'] = Number($('#vrm_model_position_x').val());
+    extension_settings.vrm.model_settings[model_path]['y'] = Number($('#vrm_model_position_y').val());
+    $('#vrm_model_position_x_value').text(extension_settings.vrm.model_settings[model_path]['x']);
+    $('#vrm_model_position_y_value').text(extension_settings.vrm.model_settings[model_path]['y']);
+    saveSettingsDebounced();
+    updateModel(model_path);
+}
+
+async function onModelRotationChange() {
+    const model_path = String($('#vrm_model_select').val());
+    extension_settings.vrm.model_settings[model_path]['rx'] = Number($('#vrm_model_rotation_x').val());
+    extension_settings.vrm.model_settings[model_path]['ry'] = Number($('#vrm_model_rotation_y').val());
+    $('#vrm_model_rotation_x_value').text(extension_settings.vrm.model_settings[model_path]['rx']);
+    $('#vrm_model_rotation_y_value').text(extension_settings.vrm.model_settings[model_path]['ry']);
+    saveSettingsDebounced();
+    updateModel(model_path);
 }
 
 async function onAnimationMappingChange(type) {
@@ -243,7 +280,7 @@ async function loadModelUi(use_default_settings) {
 
     for (const i of Object.keys(model.expressionManager.expressionMap) ?? []) {
         if (!model.expressionManager.blinkExpressionNames.includes(i) && !model.expressionManager.mouthExpressionNames.includes(i) && !model.expressionManager.lookAtExpressionNames.includes(i))
-            model_expressions.push(i);
+            model_expressions.push(i.toLowerCase());
     }
 
     model_expressions.sort();
@@ -251,6 +288,20 @@ async function loadModelUi(use_default_settings) {
 
     console.debug(DEBUG_PREFIX, 'expressions:', model_expressions);
     console.debug(DEBUG_PREFIX, 'motions:', model_motions);
+
+    // Model settings
+    $('#vrm_model_scale').val(extension_settings.vrm.model_settings[model_path]['scale']);
+    $('#vrm_model_scale_value').text(extension_settings.vrm.model_settings[model_path]['scale']);
+
+    $('#vrm_model_position_x').val(extension_settings.vrm.model_settings[model_path]['x']);
+    $('#vrm_model_position_x_value').text(extension_settings.vrm.model_settings[model_path]['x']);
+    $('#vrm_model_position_y').val(extension_settings.vrm.model_settings[model_path]['y']);
+    $('#vrm_model_position_y_value').text(extension_settings.vrm.model_settings[model_path]['y']);
+
+    $('#vrm_model_rotation_x').val(extension_settings.vrm.model_settings[model_path]['rx']);
+    $('#vrm_model_rotation_x_value').text(extension_settings.vrm.model_settings[model_path]['rx']);
+    $('#vrm_model_rotation_y').val(extension_settings.vrm.model_settings[model_path]['ry']);
+    $('#vrm_model_rotation_y_value').text(extension_settings.vrm.model_settings[model_path]['ry']);
 
 	// TODO: MouthAnimations
 
@@ -417,6 +468,8 @@ async function updateCharactersModels(refreshButton = false) {
     }
 
     animations_files = assets['vrm']['animation'];
+    for(const i in animations_files)
+        animations_files[i] = animations_files[i].toLowerCase();
 
     console.debug(DEBUG_PREFIX, 'Updated models to:', characters_models, animations_files);
     $('#vrm_character_select').trigger('change');

@@ -20,6 +20,7 @@ DONE:
 
 TODO:
 - Save model settings pos/rotate/scale
+- check talk expression collide
 - other kind of camera
 - mouth movement
     - tts lip sync
@@ -30,7 +31,8 @@ TODO:
     - model switch
     - only full load at start and on reload button?
 - 3D room
-- make it work with live2d on top of it
+- make it work with vrm on top of it
+- Model Gallery
 */
 import { eventSource, event_types, getCharacters } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
@@ -57,6 +59,9 @@ import {
     onModelRefreshClick,
     onModelChange,
     onModelResetClick,
+    onModelScaleChange,
+    onModelPositionChange,
+    onModelRotationChange,
     onAnimationMappingChange,
     animations_files
 } from "./ui.js";
@@ -106,6 +111,12 @@ function loadSettings() {
     $('#vrm_model_refresh_button').on('click', onModelRefreshClick);
     $('#vrm_model_select').on('change', onModelChange);
     $('#vrm_model_reset_button').on('click', onModelResetClick);
+
+    $('#vrm_model_scale').on('input', onModelScaleChange);
+    $('#vrm_model_position_x').on('input', onModelPositionChange);
+    $('#vrm_model_position_y').on('input', onModelPositionChange);
+    $('#vrm_model_rotation_x').on('input', onModelRotationChange);
+    $('#vrm_model_rotation_y').on('input', onModelRotationChange);
 
     $('#vrm_default_expression_select').on('change', () => {onAnimationMappingChange('animation_default');});
     $('#vrm_default_motion_select').on('change', () => {onAnimationMappingChange('animation_default');});
@@ -185,7 +196,7 @@ async function setExpressionSlashCommand(_, expression) {
     await setExpression(expression);
 }
 
-// Example /live2dmotion character="Xixuegi" motion="_id=0"
+// Example /vrmmotion anger
 async function setMotionSlashCommand(_, motion) {
     if (!motion) {
         console.log('No motion provided');

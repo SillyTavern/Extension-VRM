@@ -120,12 +120,12 @@ const DEFAULT_MOTION_MAPPING = {
     "joy": "assets/vrm/animation/joy.bvh",
     "love": "assets/vrm/animation/love.bvh",
     "nervousness": "assets/vrm/animation/nervousness.bvh",
+    "neutral": "assets/vrm/animation/neutral.bvh",
     "optimism": "assets/vrm/animation/optimism.bvh",
     "pride": "assets/vrm/animation/pride.bvh",
     "realization": "assets/vrm/animation/realization.bvh",
     "relief": "assets/vrm/animation/relief.bvh",
     "remorse": "assets/vrm/animation/remorse.bvh",
     "sadness": "assets/vrm/animation/sadness.bvh",
-    "surprise": "assets/vrm/animation/surprise.bvh",
-    "neutral": "assets/vrm/animation/neutral.bvh"
+    "surprise": "assets/vrm/animation/surprise.bvh"
 }

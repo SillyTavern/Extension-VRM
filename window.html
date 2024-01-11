@@ -85,6 +85,74 @@
                 </div>
                 <div id="vrm_model_settings">
                     <div>
+                        <h4>Model Settings</h4>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_model_scale">
+                                Model scale <br/>(<span id="vrm_model_scale_value"></span>x)
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <input id="vrm_model_scale" type="range" min="0.2" max="30" step="0.2" value="2.0" />
+                            <small>
+                                Scale of the vrm model.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_model_position_x">
+                                Model center X offset <br/>(<span id="vrm_model_position_x_value"></span>)
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <input id="vrm_model_position_x" type="range" min="-10" max="10" step="0.1" value="0" />
+                            <small>
+                                Set the model x coordinate (Same as mouse left click/drag).
+                            </small>
+                        </div>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_model_position_y">
+                                Model center Y offset <br/>(<span id="vrm_model_position_y_value"></span>)
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <input id="vrm_model_position_y" type="range" min="-10" max="10" step="0.1" value="0" />
+                            <small>
+                                Set the model y coordinate (Same as mouse left click/drag).
+                            </small>
+                        </div>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_model_rotation_x">
+                                Model X rotation <br/>(<span id="vrm_model_rotation_x_value"></span>)
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <input id="vrm_model_rotation_x" type="range" min="-10.0" max="10.0" step="0.1" value="0" />
+                            <small>
+                                Set the model x rotation (Same as middle mouse/drag).
+                            </small>
+                        </div>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_model_rotation_y">
+                                Model Y rotation <br/>(<span id="vrm_model_rotation_y_value"></span>)
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <input id="vrm_model_rotation_y" type="range" min="-10.0" max="10.0" step="0.1" value="0"  />
+                            <small>
+                                Set the model y rotation (Same as middle mouse/drag).
+                            </small>
+                        </div>
+                    </div>
+                    <div>
                         <h4>Model Animations</h4>
                     </div>
                     <div class="vrm-parameter">
