@@ -201,7 +201,7 @@ async function setExpressionSlashCommand(_, expression) {
 // Example /vrmmotion anger
 async function setMotionSlashCommand(args, motion) {
     let loop = false;
-    if (!motion && !args[0]) {
+    if (!motion && !args["motion"]) {
         console.log('No motion provided');
         return;
     }
@@ -210,10 +210,10 @@ async function setMotionSlashCommand(args, motion) {
         motion = args["motion"];
 
     if (args["loop"])
-        loop = args["loop"];
+        loop = args["loop"].toLowerCase() === "true";
 
     motion = motion.trim();
-    console.debug(DEBUG_PREFIX,'Command motion received for', motion);
+    console.debug(DEBUG_PREFIX,'Command motion received for', motion,"loop=",loop);
 
     const fuse = new Fuse(animations_files);
     const results = fuse.search(motion);
