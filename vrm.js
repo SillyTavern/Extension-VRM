@@ -211,10 +211,18 @@ async function loadVRM() {
                 console.debug(DEBUG_PREFIX,"VRM",vrm);
                 //vrm.humanoid.getNormalizedBoneNode( "hips" ).rotation.y = Math.PI;
                 vrm.springBoneManager.reset();
-                vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = -250;
-                vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = 0.2;
-                vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = 250;
-                vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = -0.2;
+                if (vrm.meta?.metaVersion === '1') {
+                    vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = -250;
+                    vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = 0.2;
+                    vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = 250;
+                    vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = -0.2;
+                }
+                else {
+                    vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = 250;
+                    vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = -0.2;
+                    vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = -250;
+                    vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = 0.2;
+                }
 
                 animate();
 
@@ -276,7 +284,7 @@ async function setMotion( value, loop=false, force=false ) {
     if (value == "none") {
         if (currentAnimation !== undefined) {
             currentAnimation.fadeOut(0.2);
-            currentAnimation = undefined;
+            currentAnimation.overwrited = true;
         }
         currentMotion = "none";
         return;
@@ -333,10 +341,9 @@ async function setMotion( value, loop=false, force=false ) {
 
                 setTimeout(() => {
                     if (!newAnimation.overwrited) {
-                        newAnimation.fadeOut(ANIMATION_FADE_TIME);
                         setTimeout(async () => {
                             setMotion(extension_settings.vrm.model_settings[currentVRMPath]["animation_default"]["motion"], true);
-                        }, ANIMATION_FADE_TIME+0.1);
+                        }, ANIMATION_FADE_TIME);
                     }
                 }, clip.duration*1000);
             }
