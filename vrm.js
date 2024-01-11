@@ -540,6 +540,8 @@ async function talk(chat_id) {
             await delay(100);
         }
         abortTalking = false;
+        currentVRM.expressionManager.setValue("aa",1);
+        currentVRM.expressionManager.setValue(currentExpression,1.0);
         console.debug(DEBUG_PREFIX,'Start new talk');
         //return;
     }
@@ -574,6 +576,7 @@ async function talk(chat_id) {
         currentVRM.expressionManager.setValue(currentExpression,1.0);
     }
     isTalking = false;
+    currentVRM.expressionManager.setValue("aa",0.0);
 }
 
 // handle window resizes
