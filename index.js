@@ -22,14 +22,14 @@ DONE:
 - loop option for animations command
 - Consider animation as group Idle.bvh/Idle1.bvh/Idle2.bvh appear as "Idle" group, play one randomly
 - Command by default play requested animation not the group
+- group support
+- Better text talk function
 
 TODO:
     v1.0:
-        - check talk expression collide
         - mouth movement
             - tts lip sync
         - blink smooth and adapt to current expression?
-        - group support
         - Optimize avoid full reload when not needed
             - model switch
             - only full load at start and on reload button?
@@ -73,6 +73,7 @@ import {
     onAnimationMappingChange,
     animations_files
 } from "./ui.js";
+import "./controls.js";
 
 import { currentChatMembers } from "./utils.js";
 
@@ -131,9 +132,6 @@ function loadSettings() {
     $('#vrm_default_expression_replay').on('click', () => {onAnimationMappingChange('animation_default');});
     $('#vrm_default_motion_replay').on('click', () => {onAnimationMappingChange('animation_default');});
 
-    // Events
-    //window.addEventListener('resize', () => {loadVRM(); console.debug(DEBUG_PREFIX,'Window resized, reloading VRM');});
-
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersList);
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersModels);
     eventSource.on(event_types.CHAT_CHANGED, loadVRM);
@@ -141,8 +139,8 @@ function loadSettings() {
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersList);
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersModels);
 
-    eventSource.on(event_types.MESSAGE_RECEIVED, async (chat_id) => {await updateExpression(chat_id); talk(chat_id)});
-    eventSource.on(event_types.MESSAGE_EDITED, async (chat_id) => {await updateExpression(chat_id); talk(chat_id)});
+    eventSource.on(event_types.MESSAGE_RECEIVED, async (chat_id) => {updateExpression(chat_id); talk(chat_id)});
+    eventSource.on(event_types.MESSAGE_EDITED, async (chat_id) => {updateExpression(chat_id); talk(chat_id)});
 
     updateCharactersListOnce();
     updateCharactersModels();
@@ -191,27 +189,47 @@ jQuery(async () => {
     registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: /vrmexpression idle)', true, true);
 });
 
-async function setExpressionSlashCommand(_, expression) {
+async function setExpressionSlashCommand(args, expression) {
+    let character = undefined;
     if (!expression) {
         console.log('No expression provided');
         return;
     }
 
+    if (args["character"])
+        character = args["character"];
+
+    if (args["expression"])
+        character = args["expression"];
+
+    if (character === undefined) {
+        const characters = currentChatMembers();
+        if(characters.length == 0) {
+            console.log('No character provided and none detected in current chat');
+            return;
+        }
+        character = characters[0];
+    }
+
     expression = expression.trim();
 
-    console.debug(DEBUG_PREFIX,'Command expression received for',expression);
+    console.debug(DEBUG_PREFIX,'Command expression received for character=',character,"expression=",expression);
 
-    await setExpression(expression);
+    await setExpression(character,expression);
 }
 
 // Example /vrmmotion anger
 async function setMotionSlashCommand(args, motion) {
+    let character = undefined;
     let loop = false;
     let random = false;
     if (!motion && !args["motion"]) {
         console.log('No motion provided');
         return;
     }
+
+    if (args["character"])
+        character = args["character"];
 
     if (args["motion"])
         motion = args["motion"];
@@ -222,8 +240,17 @@ async function setMotionSlashCommand(args, motion) {
     if (args["random"])
         random = args["random"].toLowerCase() === "true";
 
+    if (character === undefined) {
+        const characters = currentChatMembers();
+        if(characters.length == 0) {
+            console.log('No character provided and none detected in current chat');
+            return;
+        }
+        character = characters[0];
+    }
+
     motion = motion.trim();
-    console.debug(DEBUG_PREFIX,'Command motion received for', motion,"loop=",loop, "random=",random);
+    console.debug(DEBUG_PREFIX,'Command motion received for character=',character,"motion=", motion,"loop=",loop, "random=",random);
 
     const fuse = new Fuse(animations_files);
     const results = fuse.search(motion);
@@ -231,7 +258,7 @@ async function setMotionSlashCommand(args, motion) {
 
     if (fileItem)
     {
-        await setMotion(fileItem, loop, true, random);
+        await setMotion(character, fileItem, loop, true, random);
     }
     else{
         console.debug(DEBUG_PREFIX,'Motion not found in', animations_files);

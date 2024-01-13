@@ -9,8 +9,7 @@ import {
 
 import {
     loadVRM,
-    currentVRM,
-    currentMotion,
+    getVRM,
     setExpression,
     setMotion,
     updateModel
@@ -192,7 +191,7 @@ async function onModelChange() {
     }
     if (motion !== undefined && motion != "none") {
         console.debug(DEBUG_PREFIX,"Set default motion to",motion);
-        setMotion(motion);
+        setMotion(character, motion);
     }
     
     $('#vrm_model_settings').show();
@@ -232,14 +231,11 @@ async function onAnimationMappingChange(type) {
     const model_path = String($('#vrm_model_select').val());
     let expression;
     let motion;
-    let is_new_motion = false;
 
     switch (type) {
         case 'animation_default':
             expression = $('#vrm_default_expression_select').val();
             motion = $('#vrm_default_motion_select').val();
-
-            is_new_motion = currentMotion != motion;
 
             extension_settings.vrm.model_settings[model_path]['animation_default']['expression'] = expression;
             extension_settings.vrm.model_settings[model_path]['animation_default']['motion'] = motion;
@@ -252,9 +248,7 @@ async function onAnimationMappingChange(type) {
     saveSettingsDebounced();
 
     setExpression(expression);
-
-    if (is_new_motion)
-        setMotion(motion);
+    setMotion(character, motion);
 }
 
 async function loadModelUi(use_default_settings) {
@@ -267,10 +261,10 @@ async function loadModelUi(use_default_settings) {
     if (model_path == "none")
         return;
 
-    let model = currentVRM;
+    let model = getVRM(character);
 
-    while (model === undefined) {
-        model = currentVRM;
+    while (model === undefined) { // TODO wait cleaner way
+        model = getVRM(character);
         await delay(500);
     }
 
@@ -395,7 +389,7 @@ async function updateExpressionMapping(expression) {
 
     setExpression(model_expression);
 
-    setMotion(value=model_motion, loop=true, force=true, random=true);
+    setMotion(character, value=model_motion, loop=true, force=true, random=true);
     console.debug(DEBUG_PREFIX, 'Updated expression mapping:', expression, extension_settings.vrm.model_settings[model]['classify_mapping'][expression]);
 }
 

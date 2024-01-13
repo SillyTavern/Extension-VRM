@@ -11,17 +11,21 @@ export {
     DEFAULT_MOTION_MAPPING,
     MIN_SCALE,
     MAX_SCALE,
-    ANIMATION_FADE_TIME
+    ANIMATION_FADE_TIME,
+    SPRITE_DIV,
+    VN_MODE_DIV
 }
 
 const MODULE_NAME = "VRM";
 const VRM_MODEL_FOLDER = "live2d";
 const extensionFolderPath = `scripts/extensions/third-party/Extension-VRM`;
-const DEBUG_PREFIX = "<VRM module>"
-const VRM_CANVAS_ID = "vrm-canvas"
-const MIN_SCALE = 0.2
-const MAX_SCALE = 30
-const ANIMATION_FADE_TIME = 0.2
+const DEBUG_PREFIX = "<VRM module>";
+const VRM_CANVAS_ID = "vrm-canvas";
+const MIN_SCALE = 0.2;
+const MAX_SCALE = 30;
+const ANIMATION_FADE_TIME = 0.3;
+const SPRITE_DIV = 'expression-wrapper';
+const VN_MODE_DIV = 'visual-novel-wrapper';
 
 const JS_LIBS = [
 "es-module-shims.js"
