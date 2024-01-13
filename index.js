@@ -132,15 +132,26 @@ function loadSettings() {
     $('#vrm_default_expression_replay').on('click', () => {onAnimationMappingChange('animation_default');});
     $('#vrm_default_motion_replay').on('click', () => {onAnimationMappingChange('animation_default');});
 
-    eventSource.on(event_types.CHAT_CHANGED, updateCharactersList);
-    eventSource.on(event_types.CHAT_CHANGED, updateCharactersModels);
-    eventSource.on(event_types.CHAT_CHANGED, loadVRM);
+    eventSource.on(event_types.CHAT_CHANGED, async () => {
+        updateCharactersList();
+        updateCharactersModels();
+        loadVRM();
+    });
 
-    eventSource.on(event_types.GROUP_UPDATED, updateCharactersList);
-    eventSource.on(event_types.GROUP_UPDATED, updateCharactersModels);
+    eventSource.on(event_types.GROUP_UPDATED, async () => {
+        updateCharactersList();
+        updateCharactersModels();
+    });
 
-    eventSource.on(event_types.MESSAGE_RECEIVED, async (chat_id) => {updateExpression(chat_id); talk(chat_id)});
-    eventSource.on(event_types.MESSAGE_EDITED, async (chat_id) => {updateExpression(chat_id); talk(chat_id)});
+    eventSource.on(event_types.MESSAGE_RECEIVED, async (chat_id) => {
+        updateExpression(chat_id);
+        talk(chat_id);
+    });
+
+    eventSource.on(event_types.MESSAGE_EDITED, async (chat_id) => {
+        updateExpression(chat_id);
+        talk(chat_id);
+    });
 
     updateCharactersListOnce();
     updateCharactersModels();
@@ -177,7 +188,10 @@ jQuery(async () => {
     $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
 
-    $('#vrm_reload_button').on('click', () => {loadVRM(); console.debug(DEBUG_PREFIX,'Reset clicked, reloading VRM');});
+    $('#vrm_reload_button').on('click', async () => {
+        loadVRM();
+        console.debug(DEBUG_PREFIX,'Reset clicked, reloading VRM');
+    });
 
     /*// Module worker
     const wrapper = new ModuleWorkerWrapper(moduleWorker);

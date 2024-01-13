@@ -113,8 +113,8 @@ async function loadVRM() {
     $('#' + VN_MODE_DIV).addClass('vrm-hidden');
 
     if (!extension_settings.vrm.enabled) {
-        $('#' + SPRITE_DIV).addClass('vrm-hidden');
-        $('#' + VN_MODE_DIV).addClass('vrm-hidden');
+        $('#' + SPRITE_DIV).removeClass('vrm-hidden');
+        $('#' + VN_MODE_DIV).removeClass('vrm-hidden');
         return
     }
 

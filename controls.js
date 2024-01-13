@@ -187,7 +187,7 @@ async function pointerMove(event) {
 }
 
 async function wheel(event) {
-    event.preventDefault();
+    //event.preventDefault();
     // UI between mouse and canvas
     const element = document.elementFromPoint(event.clientX, event.clientY);
     if (element.id != VRM_CANVAS_ID)
