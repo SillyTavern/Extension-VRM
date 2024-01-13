@@ -352,7 +352,11 @@ async function loadModel(character,model_path=null) {
             $("#vrm_model_loading_percent").text(percent);
         },
         // called when loading has errors
-        ( error ) => console.error( error )
+        ( error ) => {
+            console.debug(DEBUG_PREFIX,"Error when loading",model_path,":",error)
+            toastr.error('Wrong avatar file:'+model_path, DEBUG_PREFIX + ' cannot load', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            return;
+        }
     );
 }
 

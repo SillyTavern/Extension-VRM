@@ -35,6 +35,7 @@ TODO:
         - blink smooth and adapt to current expression?
         - Light control
     v2.0:
+        - Optional animation cache ?
         - click interaction
         - other kind of camera
         - 3D room
