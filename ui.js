@@ -187,18 +187,6 @@ async function onModelChange() {
     //await loadScene();
     await loadModel(character,model_path);
     await loadModelUi(use_default_settings);
-
-    const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
-    const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
-
-    if (expression !== undefined && expression != "none") {
-        console.debug(DEBUG_PREFIX,"Set default expression to",expression);
-        setExpression(expression);
-    }
-    if (motion !== undefined && motion != "none") {
-        console.debug(DEBUG_PREFIX,"Set default motion to",motion);
-        setMotion(character, motion);
-    }
     
     $('#vrm_model_settings').show();
     $('#vrm_model_loading').hide();
@@ -254,7 +242,7 @@ async function onAnimationMappingChange(type) {
     saveSettingsDebounced();
 
     setExpression(expression);
-    setMotion(character, motion);
+    setMotion(character, motion, true);
 }
 
 async function loadModelUi(use_default_settings) {

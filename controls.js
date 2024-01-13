@@ -91,7 +91,7 @@ async function pointerDown(event) {
             while (dragObject.parent != null && !dragObject.name.includes(VRM_CONTAINER_NAME) && dragObject.parent.type != "Scene")
                 dragObject = dragObject.parent;
 
-            console.debug(DEBUG_PREFIX,"CLICKED on",dragObject);
+            //console.debug(DEBUG_PREFIX,"CLICKED on",dragObject);
 
             if (!dragObject.name.includes(VRM_CONTAINER_NAME))
                 return;
@@ -110,7 +110,7 @@ async function pointerDown(event) {
                 isDragging = true;
                 isRotating = false;
                 isScaling = false;
-                console.debug(DEBUG_PREFIX,"Dragging ",dragObject.character);
+                //console.debug(DEBUG_PREFIX,"Dragging ",dragObject.character);
             }
 
             // Rotation
@@ -118,13 +118,13 @@ async function pointerDown(event) {
                 isDragging = false;
                 isRotating = true;
                 isScaling = false;
-                console.debug(DEBUG_PREFIX,"Rotating ",dragObject.character);
+                //console.debug(DEBUG_PREFIX,"Rotating ",dragObject.character);
             }
 
             // Scale
             if(isLeftClick && event.shiftKey && !event.ctrlKey){
                 isScaling = true;
-                console.debug(DEBUG_PREFIX,"Scaling ",dragObject.character);
+                //console.debug(DEBUG_PREFIX,"Scaling ",dragObject.character);
             }
         }
     }
@@ -207,8 +207,7 @@ async function wheel(event) {
         while (dragObject.parent != null && !dragObject.name.includes(VRM_CONTAINER_NAME) && dragObject.parent.type != "Scene")
             dragObject = dragObject.parent;
 
-            
-        console.debug(DEBUG_PREFIX,"Wheel on",dragObject);
+        //console.debug(DEBUG_PREFIX,"Wheel on",dragObject);
 
         if (!dragObject.name.includes(VRM_CONTAINER_NAME) || event.deltaY == 0)
             return;

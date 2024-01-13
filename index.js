@@ -25,10 +25,11 @@ DONE:
 - group support
 - Better text talk function
 - only full load at start and on reload button
+- Error message for wrong animation files
+- cache animation files
 
 TODO:
     v1.0:
-        - Error message for wrong animation files
         - mouth movement
             - tts lip sync
         - blink smooth and adapt to current expression?
@@ -274,7 +275,7 @@ async function setMotionSlashCommand(args, motion) {
 
     if (fileItem)
     {
-        await setMotion(character, fileItem, loop, true, random);
+        setMotion(character, fileItem, loop, true, random);
     }
     else{
         console.debug(DEBUG_PREFIX,'Motion not found in', animations_files);

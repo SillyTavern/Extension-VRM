@@ -49,12 +49,12 @@ export {
 const VRM_CONTAINER_NAME = "VRM_CONTAINER";
 const VRM_COLLIDER_NAME = "VRM_COLLIDER"
 
-// Globals
-let current_characters = []
-
 // Avatars
 let current_avatars = {} // contain loaded avatar variables
 let vrm_colliders = [] // use for raycasting
+
+// Animations
+let animations_cache = {};
 
 // 3D Scene
 let renderer = undefined;
@@ -103,6 +103,7 @@ async function loadScene() {
     clock = new THREE.Clock();
     current_avatars = {};
     vrm_colliders = [];
+    animations_cache = {};
     const instanceId = currentInstanceId + 1;
     currentInstanceId = instanceId;
 
@@ -216,7 +217,7 @@ async function loadModel(character,model_path=null) {
 
     await loader.load(
         model_path,
-        ( gltf ) => { // called when the resource is loaded
+        async ( gltf ) => { // called when the resource is loaded
 
             const vrm = gltf.userData.vrm;
             const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
@@ -252,6 +253,7 @@ async function loadModel(character,model_path=null) {
             const scale = extension_settings.vrm.model_settings[model_path]["scale"]
             // Create a group to set model center as rotation/scaling origin
             const object_container = new THREE.Group(); // First container to scale/position center model
+            object_container.visible = false;
             object_container.name = VRM_CONTAINER_NAME+"_"+character;
             object_container.character = character; // link to character for mouse controls
             object_container.model_path = model_path; // link to character for mouse controls
@@ -303,6 +305,27 @@ async function loadModel(character,model_path=null) {
 
             updateModel(character);
 
+            // Cache model animations
+            if (animations_cache[model_path] === undefined) {
+                animations_cache[model_path] = {};
+                const animation_names = [extension_settings.vrm.model_settings[model_path]['animation_default']['motion']]
+                for (const i in extension_settings.vrm.model_settings[model_path]['classify_mapping']) {
+                    animation_names.push(extension_settings.vrm.model_settings[model_path]['classify_mapping'][i]["motion"]);
+                }
+
+                for (const file of animations_files) {
+                    for (const i of animation_names) {
+                        if(file.includes(i) && animations_cache[model_path][file] === undefined) {
+                            const clip = await loadAnimation(vrm, hipsHeight, file);
+                            if (clip !== undefined)
+                                animations_cache[model_path][file] = clip;
+                        }
+                    }
+                }
+
+                console.debug(DEBUG_PREFIX,"Cached animations:",animations_cache[model_path]);
+            }
+
             // Load default expression/motion
             const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
             const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
@@ -318,7 +341,9 @@ async function loadModel(character,model_path=null) {
 
             blink(character, currentInstanceId);
             textTalk(character, currentInstanceId);
+            object_container.visible = true;
             console.debug(DEBUG_PREFIX,"VRM fully loaded:",character,model_path);
+            console.debug(DEBUG_PREFIX,"MODEL:",vrm);
         },
         // called while loading is progressing
         ( progress ) => {
@@ -350,6 +375,35 @@ async function setExpression(character, value) {
 
     vrm.expressionManager.setValue(value, 0.25);
     current_avatars[character]["expression"] = value;
+}
+
+async function loadAnimation(vrm, hipsHeight, motion_file_path) {
+    let clip;
+    try {
+        // Mixamo animation
+        if (motion_file_path.endsWith(".fbx")) {
+            console.debug(DEBUG_PREFIX,"Loading fbx file");
+
+            // Load animation
+            clip = await loadMixamoAnimation(motion_file_path, vrm, hipsHeight);
+        }
+        else
+        if (motion_file_path.endsWith(".bvh")) {
+            console.debug(DEBUG_PREFIX,"Loading bvh file");
+            clip = await loadBVHAnimation(motion_file_path, vrm, hipsHeight);
+        }
+        else {
+            console.debug(DEBUG_PREFIX,"UNSUPORTED animation file");
+            toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            return;
+        }
+    }
+    catch(error) {
+        console.debug(DEBUG_PREFIX,"Something went wrong when loading animation file:",motion_file_path);
+        toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        return;
+    }
+    return clip;
 }
 
 async function setMotion(character, motion_file_path, loop=false, force=false, random=true ) {
@@ -392,30 +446,17 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
     // new animation
     if (current_motion_name != motion_file_path || loop || force) {
 
-        try {
+        if (animations_cache[model_path][motion_file_path] !== undefined) {
+            clip = animations_cache[model_path][motion_file_path];
+        }
+        else {
+            clip = await loadAnimation(vrm, hipsHeight, motion_file_path);
 
-            // Mixamo animation
-            if (motion_file_path.endsWith(".fbx")) {
-                console.debug(DEBUG_PREFIX,"Loading fbx file");
-
-                // Load animation
-                clip = await loadMixamoAnimation(motion_file_path, vrm, hipsHeight);
-                console.debug(DEBUG_PREFIX,"AAAAAAAAAAAAAA",clip)
-            }
-            else
-            if (motion_file_path.endsWith(".bvh")) {
-                console.debug(DEBUG_PREFIX,"Loading bvh file");
-                clip = await loadBVHAnimation(motion_file_path, vrm, hipsHeight);
-            }
-            else {
-                console.debug(DEBUG_PREFIX,"UNSUPORTED animation file");
-                toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            if (clip === undefined) {
                 return;
             }
-        }
-        catch(error) {
-            console.debug(DEBUG_PREFIX,"Something went wrong when loading animation file:",motion_file_path);
-            toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+
+            animations_cache[model_path][motion_file_path] = clip;
         }
 
         current_avatars[character]["motion"]["name"] = motion_file_path;

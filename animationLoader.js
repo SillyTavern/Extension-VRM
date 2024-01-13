@@ -77,7 +77,7 @@ const mixamoVRMRigMap = {
  * @param {vrm} vrm A target VRM
  * @returns {Promise<THREE.AnimationClip>} The converted AnimationClip
  */
-function loadMixamoAnimation( url, vrm, currentVRMHipsHeight) {
+async function loadMixamoAnimation( url, vrm, currentVRMHipsHeight) {
 
 	const loader = new FBXLoader(); // A loader which loads FBX
 	return loader.loadAsync( url ).then( ( asset ) => {
@@ -174,7 +174,7 @@ function loadMixamoAnimation( url, vrm, currentVRMHipsHeight) {
  * @param {VRM} vrm A target VRM
  * @returns {Promise<THREE.AnimationClip>} The converted AnimationClip
  */
-function loadBVHAnimation( url, vrm, currentVRMHipsHeight ) {
+async function loadBVHAnimation( url, vrm, currentVRMHipsHeight ) {
     const loader = new BVHLoader();
     return loader.loadAsync( url ).then( ( result ) => {
         
