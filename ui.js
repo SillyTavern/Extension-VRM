@@ -389,7 +389,7 @@ async function updateExpressionMapping(expression) {
 
     setExpression(model_expression);
 
-    setMotion(character, value=model_motion, loop=true, force=true, random=true);
+    setMotion(character, model_motion, true, true, true);
     console.debug(DEBUG_PREFIX, 'Updated expression mapping:', expression, extension_settings.vrm.model_settings[model]['classify_mapping'][expression]);
 }
 

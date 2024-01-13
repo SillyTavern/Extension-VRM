@@ -27,12 +27,12 @@ DONE:
 
 TODO:
     v1.0:
-        - mouth movement
-            - tts lip sync
-        - blink smooth and adapt to current expression?
         - Optimize avoid full reload when not needed
             - model switch
             - only full load at start and on reload button?
+        - mouth movement
+            - tts lip sync
+        - blink smooth and adapt to current expression?
         - Light control
         - Error message for wrong animation files
     v2.0:
