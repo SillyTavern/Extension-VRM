@@ -13,7 +13,7 @@ import {
     vrm_colliders,
     renderer,
     camera,
-    VRM_CAINTAINER_NAME
+    VRM_CONTAINER_NAME
 } from "./vrm.js";
 
 // Mouse controls
@@ -66,7 +66,7 @@ document.addEventListener("pointerup", () => {// Drop object
     isRotating = false;
     isScaling = false;
     dragObject = undefined;
-    console.debug(DEBUG_PREFIX,"Ponter released");
+    //console.debug(DEBUG_PREFIX,"Ponter released");
 } );
 
 // Select model for drag/rotate
@@ -88,10 +88,12 @@ async function pointerDown(event) {
             //controls.enabled = false;
             // Climb to VRM object
             dragObject = intersects[0].object;
-            while (dragObject.parent.type != VRM_CAINTAINER_NAME && dragObject.parent.type != "Scene")
+            while (dragObject.parent != null && !dragObject.name.includes(VRM_CONTAINER_NAME) && dragObject.parent.type != "Scene")
                 dragObject = dragObject.parent;
 
-            if (dragObject.name != VRM_CAINTAINER_NAME)
+            console.debug(DEBUG_PREFIX,"CLICKED on",dragObject);
+
+            if (!dragObject.name.includes(VRM_CONTAINER_NAME))
                 return;
 
             const isLeftClick = event.pointerType === 'mouse' && event.button === 0;
@@ -202,10 +204,13 @@ async function wheel(event) {
     if (intersects.length > 0) {
         // Climb to VRM object
         dragObject = intersects[0].object;
-        while (dragObject.parent.type != "VRM_CONTAINER" && dragObject.parent.type != "Scene")
-                dragObject = dragObject.parent;
+        while (dragObject.parent != null && !dragObject.name.includes(VRM_CONTAINER_NAME) && dragObject.parent.type != "Scene")
+            dragObject = dragObject.parent;
 
-        if (dragObject.name != "VRM_CONTAINER" || event.deltaY == 0)
+            
+        console.debug(DEBUG_PREFIX,"Wheel on",dragObject);
+
+        if (!dragObject.name.includes(VRM_CONTAINER_NAME) || event.deltaY == 0)
             return;
 
         // UI between mouse and canvas

@@ -31,7 +31,9 @@ import {
 } from './ui.js';
 
 export {
-    loadVRM,
+    loadScene,
+    loadAllModels,
+    loadModel,
     getVRM,
     setExpression,
     setMotion,
@@ -41,10 +43,11 @@ export {
     vrm_colliders,
     renderer,
     camera,
-    VRM_CAINTAINER_NAME
+    VRM_CONTAINER_NAME
 }
 
-const VRM_CAINTAINER_NAME = "VRM_CONTAINER"
+const VRM_CONTAINER_NAME = "VRM_CONTAINER";
+const VRM_COLLIDER_NAME = "VRM_COLLIDER"
 
 // Globals
 let current_characters = []
@@ -84,7 +87,7 @@ function animate() {
 
             vrm.update( deltaTime );
             mixer.update( deltaTime );
-            current_avatars[character]["collider"].visible = extension_settings.vrm.show_grid;
+            current_avatars[character]["colliderHelper"].visible = extension_settings.vrm.show_grid;
         }
         // Show/hide helper grid
         gridHelper.visible = extension_settings.vrm.show_grid;
@@ -96,7 +99,7 @@ function animate() {
 
 animate();
 
-async function loadVRM() {
+async function loadScene() {
     clock = new THREE.Clock();
     current_avatars = {};
     vrm_colliders = [];
@@ -155,6 +158,54 @@ async function loadVRM() {
     // lookat target
     camera.add( lookAtTarget );
 
+    //current_characters = currentChatMembers();
+    //await loadAllModels(current_characters);
+
+    //console.debug(DEBUG_PREFIX,"DEBUG",renderer);
+}
+
+async function loadAllModels(current_characters) {
+    // Unload models
+    for(const character in current_avatars) {
+        await loadModel(character,null);
+    }
+
+    if (extension_settings.vrm.enabled) {
+
+        // Load new characters models
+        for(const character of current_characters) {
+            const model_path = extension_settings.vrm.character_model_mapping[character];
+            if (model_path !== undefined) {
+                console.debug(DEBUG_PREFIX,"Loading VRM model of",character,":",model_path);
+
+                await loadModel(character,model_path);
+            }
+        }
+    }
+}
+
+async function loadModel(character,model_path=null) {
+    // unload existing model
+    if (current_avatars[character] !== undefined) {
+        console.debug(DEBUG_PREFIX,"Unloading avatar of",character);
+        const container = current_avatars[character]["objectContainer"];
+        scene.remove(scene.getObjectByName(container.name));
+        // Delete collider
+        for(const i in vrm_colliders)
+            if (vrm_colliders[i].name == current_avatars[character]["collider"].name) {
+                //console.debug(DEBUG_PREFIX,"DELETE COLLIDER",vrm_colliders[i])
+                vrm_colliders.splice(i, 1);
+                //console.debug(DEBUG_PREFIX,vrm_colliders)
+                break;
+            }
+        delete current_avatars[character];
+        await container.traverse(obj => obj.dispose?.());
+    }
+
+    // Model set to none
+    if (model_path === null)
+        return;
+
     // gltf and vrm
     const loader = new GLTFLoader();
     loader.crossOrigin = 'anonymous';
@@ -163,129 +214,120 @@ async function loadVRM() {
         return new VRMLoaderPlugin( parser );
     } );
 
-    current_characters = currentChatMembers();
+    await loader.load(
+        model_path,
+        ( gltf ) => { // called when the resource is loaded
 
-    /// NEW
-    for(const character of current_characters) {
-        const model_path = extension_settings.vrm.character_model_mapping[character];
-        if (model_path !== undefined) {
-            console.debug(DEBUG_PREFIX,"Loading VRM model of",character,":",model_path);
+            const vrm = gltf.userData.vrm;
+            const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
+            const vrmRootY = vrm.scene.position.y;
+            const hipsHeight = Math.abs( vrmHipsY - vrmRootY ); // Used for offset center rotation and animation scaling
 
-            await loader.load(
-                model_path,
-                ( gltf ) => { // called when the resource is loaded
-    
-                    const vrm = gltf.userData.vrm;
-                    const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
-                    const vrmRootY = vrm.scene.position.y;
-                    const hipsHeight = Math.abs( vrmHipsY - vrmRootY ); // Used for offset center rotation and animation scaling
-    
-                    // calling these functions greatly improves the performance
-                    VRMUtils.removeUnnecessaryVertices( gltf.scene );
-                    VRMUtils.removeUnnecessaryJoints( gltf.scene );
-    
-                    // Disable frustum culling
-                    vrm.scene.traverse( ( obj ) => {
-                        obj.frustumCulled = false;
-                    } );
+            // calling these functions greatly improves the performance
+            VRMUtils.removeUnnecessaryVertices( gltf.scene );
+            VRMUtils.removeUnnecessaryJoints( gltf.scene );
 
-                    // un-T-pose
-                    vrm.springBoneManager.reset();
-                    if (vrm.meta?.metaVersion === '1') {
-                        vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = -250;
-                        vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = 0.2;
-                        vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = 250;
-                        vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = -0.2;
-                    }
-                    else {
-                        vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = 250;
-                        vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = -0.2;
-                        vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = -250;
-                        vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = 0.2;
-                    }
-    
-                    // Add vrm to scene
-                    VRMUtils.rotateVRM0(vrm); // rotate if the VRM is VRM0.0
-                    const scale = extension_settings.vrm.model_settings[model_path]["scale"]
-                    // Create a group to set model center as rotation/scaling origin
-                    const object_container = new THREE.Group(); // First container to scale/position center model
-                    object_container.name = VRM_CAINTAINER_NAME;
-                    object_container.character = character; // link to character for mouse controls
-                    object_container.model_path = model_path; // link to character for mouse controls
-                    object_container.scale.set(scale,scale,scale);
-                    object_container.position.y = 0.5; // offset to center model
-                    const verticalOffset = new THREE.Group(); // Second container to rotate center model
-                    verticalOffset.position.y = -hipsHeight; // offset model for rotate on "center"
-                    verticalOffset.add(vrm.scene)
-                    object_container.add(verticalOffset)
-                    scene.add( object_container );
-                    
-                    // Collider used to detect mouse click
-                    const boundingBox = new THREE.Box3();
-                    boundingBox.setFromObject(vrm.scene);
-                    boundingBox.set(new THREE.Vector3(boundingBox.min.x/2,boundingBox.min.y,-0.25), new THREE.Vector3(boundingBox.max.x/2,boundingBox.max.y,0.25))
-                    const dimensions = new THREE.Vector3().subVectors( boundingBox.max, boundingBox.min );
-                    // make a BoxGeometry of the same size as Box3
-                    const boxGeo = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
-                    // move new mesh center so it's aligned with the original object
-                    const matrix = new THREE.Matrix4().setPosition(dimensions.addVectors(boundingBox.min, boundingBox.max).multiplyScalar( 0.5 ));
-                    boxGeo.applyMatrix4(matrix);
-                    // make a mesh
-                    const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial( { visible: false } ));
-                    verticalOffset.add(collider);
-                    vrm_colliders.push(collider);
-                    // Make a debug visual helper
-                    const colliderHelper = new THREE.Box3Helper( boundingBox, 0xffff00 );
-                    collider.add(colliderHelper);
-                    colliderHelper.visible = extension_settings.vrm.show_grid;
-                    
-                    // Avatar dynamic settings
-                    current_avatars[character] = {
-                        "vrm":vrm, // the actual vrm object
-                        "hipsHeight":hipsHeight, // its original hips height, used for scaling loaded animation
-                        "objectContainer":object_container, // the actual 3d group containing the vrm scene, handle centered position/rotation/scaling
-                        "collider":colliderHelper,
-                        "expression": "none",
-                        "animation_mixer": new THREE.AnimationMixer(vrm.scene),
-                        "motion": {
-                            "name": "none",
-                            "animation": null
-                        },
-                        "talkEnd": 0,
-                    };
+            // Disable frustum culling
+            vrm.scene.traverse( ( obj ) => {
+                obj.frustumCulled = false;
+            } );
 
-                    updateModel(character);
+            // un-T-pose
+            vrm.springBoneManager.reset();
+            if (vrm.meta?.metaVersion === '1') {
+                vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = -250;
+                vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = 0.2;
+                vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = 250;
+                vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = -0.2;
+            }
+            else {
+                vrm.humanoid.getNormalizedBoneNode("rightUpperArm").rotation.z = 250;
+                vrm.humanoid.getNormalizedBoneNode("rightLowerArm").rotation.z = -0.2;
+                vrm.humanoid.getNormalizedBoneNode("leftUpperArm").rotation.z = -250;
+                vrm.humanoid.getNormalizedBoneNode("leftLowerArm").rotation.z = 0.2;
+            }
 
-                    // Load default expression/motion
-                    const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
-                    const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
-    
-                    if (expression !== undefined && expression != "none") {
-                        console.debug(DEBUG_PREFIX,"Set default expression to",expression);
-                        setExpression(character, expression);
-                    }
-                    if (motion !== undefined && motion != "none") {
-                        console.debug(DEBUG_PREFIX,"Set default motion to",motion);
-                        setMotion(character, motion, true);
-                    }
-    
-                    blink(character, currentInstanceId);
-                    textTalk(character, currentInstanceId);
-                    console.debug(DEBUG_PREFIX,"VRM fully loaded:",character,model_path);
+            // Add vrm to scene
+            VRMUtils.rotateVRM0(vrm); // rotate if the VRM is VRM0.0
+            const scale = extension_settings.vrm.model_settings[model_path]["scale"]
+            // Create a group to set model center as rotation/scaling origin
+            const object_container = new THREE.Group(); // First container to scale/position center model
+            object_container.name = VRM_CONTAINER_NAME+"_"+character;
+            object_container.character = character; // link to character for mouse controls
+            object_container.model_path = model_path; // link to character for mouse controls
+            object_container.scale.set(scale,scale,scale);
+            object_container.position.y = 0.5; // offset to center model
+            const verticalOffset = new THREE.Group(); // Second container to rotate center model
+            verticalOffset.position.y = -hipsHeight; // offset model for rotate on "center"
+            verticalOffset.add(vrm.scene)
+            object_container.add(verticalOffset)
+            scene.add( object_container );
+            object_container.parent = scene;
+            
+            // Collider used to detect mouse click
+            const boundingBox = new THREE.Box3();
+            boundingBox.setFromObject(vrm.scene);
+            boundingBox.set(new THREE.Vector3(boundingBox.min.x/2,boundingBox.min.y,-0.25), new THREE.Vector3(boundingBox.max.x/2,boundingBox.max.y,0.25))
+            const dimensions = new THREE.Vector3().subVectors( boundingBox.max, boundingBox.min );
+            // make a BoxGeometry of the same size as Box3
+            const boxGeo = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
+            // move new mesh center so it's aligned with the original object
+            const matrix = new THREE.Matrix4().setPosition(dimensions.addVectors(boundingBox.min, boundingBox.max).multiplyScalar( 0.5 ));
+            boxGeo.applyMatrix4(matrix);
+            // make a mesh
+            const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial( { visible: false } ));
+            collider.name = VRM_COLLIDER_NAME+"_"+character;
+            verticalOffset.add(collider);
+            vrm_colliders.push(collider);
+            // Make a debug visual helper
+            const colliderHelper = new THREE.Box3Helper( boundingBox, 0xffff00 );
+            collider.add(colliderHelper);
+            colliderHelper.visible = extension_settings.vrm.show_grid;
+            
+            // Avatar dynamic settings
+            current_avatars[character] = {
+                "vrm":vrm, // the actual vrm object
+                "hipsHeight":hipsHeight, // its original hips height, used for scaling loaded animation
+                "objectContainer":object_container, // the actual 3d group containing the vrm scene, handle centered position/rotation/scaling
+                "collider":collider,
+                "colliderHelper":colliderHelper,
+                "expression": "none",
+                "animation_mixer": new THREE.AnimationMixer(vrm.scene),
+                "motion": {
+                    "name": "none",
+                    "animation": null
                 },
-                // called while loading is progressing
-                ( progress ) => {
-                    const percent = Math.round(100.0 * ( progress.loaded / progress.total ));
-                    console.debug(DEBUG_PREFIX, 'Loading model...', percent, '%');
-                    $("#vrm_model_loading_percent").text(percent);
-                },
-                // called when loading has errors
-                ( error ) => console.error( error )
-            );
-        }
-    }
+                "talkEnd": 0,
+            };
 
-    //console.debug(DEBUG_PREFIX,"DEBUG",renderer);
+            updateModel(character);
+
+            // Load default expression/motion
+            const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
+            const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
+
+            if (expression !== undefined && expression != "none") {
+                console.debug(DEBUG_PREFIX,"Set default expression to",expression);
+                setExpression(character, expression);
+            }
+            if (motion !== undefined && motion != "none") {
+                console.debug(DEBUG_PREFIX,"Set default motion to",motion);
+                setMotion(character, motion, true);
+            }
+
+            blink(character, currentInstanceId);
+            textTalk(character, currentInstanceId);
+            console.debug(DEBUG_PREFIX,"VRM fully loaded:",character,model_path);
+        },
+        // called while loading is progressing
+        ( progress ) => {
+            const percent = Math.round(100.0 * ( progress.loaded / progress.total ));
+            console.debug(DEBUG_PREFIX, 'Loading model...', percent, '%');
+            $("#vrm_model_loading_percent").text(percent);
+        },
+        // called when loading has errors
+        ( error ) => console.error( error )
+    );
 }
 
 async function setExpression(character, value) {
@@ -398,7 +440,7 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
             }, clip.duration*1000 - ANIMATION_FADE_TIME*1000);
         }
 
-        console.debug(DEBUG_PREFIX,"VRM animation",new_motion_animation);
+        //console.debug(DEBUG_PREFIX,"VRM animation",new_motion_animation);
         
     }
 }
@@ -464,7 +506,7 @@ function blink(character, instanceId) {
         if (current_avatars[character] !== undefined && instanceId == currentInstanceId)
             blink(character,instanceId);
         else
-            console.debug(DEBUG_PREFIX,"Stopping blink different instance detected or model unloaded.")
+            console.debug(DEBUG_PREFIX,"Stopping blink model is no more loaded.")
     }, rand);
 }
 
@@ -473,6 +515,9 @@ function blink(character, instanceId) {
 async function textTalk(character, instanceId) {
     const mouth_open_speed = 1.5;
     while (currentInstanceId == instanceId) {
+        // Model was removed
+        if (current_avatars[character] === undefined)
+            break;
         const vrm = current_avatars[character]["vrm"]
         const talkEnd = current_avatars[character]["talkEnd"]
         let mouth_y = 0.0;
@@ -502,7 +547,6 @@ async function talk(chat_id) {
     const message = getContext().chat[chat_id]
     const text = message.mes;
     const character = message.name;
-    let vrm;
 
     console.debug(DEBUG_PREFIX,"Playing mouth animation for",character," message:",text);
 
@@ -528,25 +572,27 @@ function onWindowResize(){
 }
 
 async function updateModel(character) {
-    const object_container = current_avatars[character]["objectContainer"];
-    const model_path = extension_settings.vrm.character_model_mapping[character];
+    if (current_avatars[character] !== undefined) {
+        const object_container = current_avatars[character]["objectContainer"];
+        const model_path = extension_settings.vrm.character_model_mapping[character];
 
-    object_container.scale.x = extension_settings.vrm.model_settings[model_path]['scale'];
-    object_container.scale.y = extension_settings.vrm.model_settings[model_path]['scale'];
-    object_container.scale.z = extension_settings.vrm.model_settings[model_path]['scale'];
+        object_container.scale.x = extension_settings.vrm.model_settings[model_path]['scale'];
+        object_container.scale.y = extension_settings.vrm.model_settings[model_path]['scale'];
+        object_container.scale.z = extension_settings.vrm.model_settings[model_path]['scale'];
 
-    object_container.position.x = (extension_settings.vrm.model_settings[model_path]['x']);
-    object_container.position.y = (extension_settings.vrm.model_settings[model_path]['y']);
-    object_container.position.z = 0.0; // In case somehow it get away from 0
+        object_container.position.x = (extension_settings.vrm.model_settings[model_path]['x']);
+        object_container.position.y = (extension_settings.vrm.model_settings[model_path]['y']);
+        object_container.position.z = 0.0; // In case somehow it get away from 0
 
-    object_container.rotation.x = extension_settings.vrm.model_settings[model_path]['rx'];
-    object_container.rotation.y = extension_settings.vrm.model_settings[model_path]['ry'];
-    object_container.rotation.z = 0.0; // In case somehow it get away from 0
+        object_container.rotation.x = extension_settings.vrm.model_settings[model_path]['rx'];
+        object_container.rotation.y = extension_settings.vrm.model_settings[model_path]['ry'];
+        object_container.rotation.z = 0.0; // In case somehow it get away from 0
 
-    console.debug(DEBUG_PREFIX,"Updated model:")
-    console.debug(DEBUG_PREFIX,"Scale:",object_container.scale)
-    console.debug(DEBUG_PREFIX,"Position:",object_container.position)
-    console.debug(DEBUG_PREFIX,"Rotation:",object_container.rotation)
+        //console.debug(DEBUG_PREFIX,"Updated model:")
+        //console.debug(DEBUG_PREFIX,"Scale:",object_container.scale)
+        //console.debug(DEBUG_PREFIX,"Position:",object_container.position)
+        //console.debug(DEBUG_PREFIX,"Rotation:",object_container.rotation)
+    }
 }
 
 function getVRM(character) {

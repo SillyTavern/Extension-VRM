@@ -24,18 +24,17 @@ DONE:
 - Command by default play requested animation not the group
 - group support
 - Better text talk function
+- only full load at start and on reload button
 
 TODO:
     v1.0:
-        - Optimize avoid full reload when not needed
-            - model switch
-            - only full load at start and on reload button?
         - mouth movement
             - tts lip sync
         - blink smooth and adapt to current expression?
         - Light control
         - Error message for wrong animation files
     v2.0:
+        - click interaction
         - other kind of camera
         - 3D room
         - make it work with live2d on top of it
@@ -48,7 +47,8 @@ import { registerSlashCommand } from '../../../slash-commands.js';
 export { MODULE_NAME };
 import { MODULE_NAME, DEBUG_PREFIX, VRM_CANVAS_ID } from "./constants.js";
 import {
-    loadVRM,
+    loadScene,
+    loadAllModels,
     setExpression,
     setMotion,
     updateExpression,
@@ -135,12 +135,13 @@ function loadSettings() {
     eventSource.on(event_types.CHAT_CHANGED, async () => {
         updateCharactersList();
         updateCharactersModels();
-        loadVRM();
+        loadAllModels(currentChatMembers());
     });
 
     eventSource.on(event_types.GROUP_UPDATED, async () => {
         updateCharactersList();
         updateCharactersModels();
+        loadAllModels(currentChatMembers());
     });
 
     eventSource.on(event_types.MESSAGE_RECEIVED, async (chat_id) => {
@@ -156,7 +157,7 @@ function loadSettings() {
     updateCharactersListOnce();
     updateCharactersModels();
 
-    loadVRM();
+    loadScene();
 }
 
 //#############################//
@@ -189,7 +190,8 @@ jQuery(async () => {
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
 
     $('#vrm_reload_button').on('click', async () => {
-        loadVRM();
+        await loadScene();
+        await loadAllModels(currentChatMembers());
         console.debug(DEBUG_PREFIX,'Reset clicked, reloading VRM');
     });
 

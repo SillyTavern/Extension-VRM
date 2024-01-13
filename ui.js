@@ -8,7 +8,8 @@ import {
 } from './constants.js';
 
 import {
-    loadVRM,
+    loadScene,
+    loadModel,
     getVRM,
     setExpression,
     setMotion,
@@ -51,7 +52,7 @@ async function onEnabledClick() {
     extension_settings.vrm.enabled = $('#vrm_enabled_checkbox').is(':checked');
     saveSettingsDebounced();
 
-    await loadVRM();
+    await loadScene();
 }
 
 async function onFollowCameraClick() {
@@ -115,7 +116,7 @@ async function onCharacterRemoveClick() {
     $('#vrm_model_settings').hide();
     delete extension_settings.vrm.character_model_mapping[character];
     saveSettingsDebounced();
-    await loadVRM();
+    await loadModel(character,null);
     console.debug(DEBUG_PREFIX, 'Deleted all settings for', character);
 }
 
@@ -127,6 +128,9 @@ async function onModelRefreshClick() {
 
 async function onModelResetClick() {
     const model_path = String($('#vrm_model_select').val());
+
+    if (model_path == "none")
+        return;
 
     const template = `<div class="m-b-1">Are you sure you want to reset all settings of this VRM model?</div>`;
     const confirmation = await callPopup(template, 'confirm');
@@ -146,13 +150,15 @@ async function onModelChange() {
     let use_default_settings = false;
 
     $('#vrm_model_settings').hide();
-    $('#vrm_model_loading').show();
 
     if (model_path == 'none') {
         delete extension_settings.vrm.character_model_mapping[character];
         saveSettingsDebounced();
+        await loadModel(character,null);
         return;
     }
+
+    $('#vrm_model_loading').show();
 
     extension_settings.vrm.character_model_mapping[character] = model_path;
     saveSettingsDebounced();
@@ -175,11 +181,11 @@ async function onModelChange() {
             extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression] = { 'expression': 'none', 'motion': 'none' };
         }
 
-        // TODO: default settings usual expression like happy,sad,etc
         saveSettingsDebounced();
     }
 
-    await loadVRM();
+    //await loadScene();
+    await loadModel(character,model_path);
     await loadModelUi(use_default_settings);
 
     const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
@@ -268,7 +274,7 @@ async function loadModelUi(use_default_settings) {
         await delay(500);
     }
 
-    console.debug(DEBUG_PREFIX, 'loading settings of model:', model);
+    console.debug(DEBUG_PREFIX, 'loading settings of model:', model_path);
 
     let model_expressions = [];
     let model_motions = animations_groups;
