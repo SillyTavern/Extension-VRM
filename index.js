@@ -28,11 +28,11 @@ DONE:
 
 TODO:
     v1.0:
+        - Error message for wrong animation files
         - mouth movement
             - tts lip sync
         - blink smooth and adapt to current expression?
         - Light control
-        - Error message for wrong animation files
     v2.0:
         - click interaction
         - other kind of camera

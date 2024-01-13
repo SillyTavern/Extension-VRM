@@ -277,6 +277,7 @@ async function loadModel(character,model_path=null) {
             // make a mesh
             const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial( { visible: false } ));
             collider.name = VRM_COLLIDER_NAME+"_"+character;
+            collider.material.side = THREE.BackSide;
             verticalOffset.add(collider);
             vrm_colliders.push(collider);
             // Make a debug visual helper
@@ -391,21 +392,30 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
     // new animation
     if (current_motion_name != motion_file_path || loop || force) {
 
-        // Mixamo animation
-        if (motion_file_path.endsWith(".fbx")) {
-            console.debug(DEBUG_PREFIX,"Loading fbx file");
+        try {
 
-            // Load animation
-            clip = await loadMixamoAnimation(motion_file_path, vrm, hipsHeight);
+            // Mixamo animation
+            if (motion_file_path.endsWith(".fbx")) {
+                console.debug(DEBUG_PREFIX,"Loading fbx file");
+
+                // Load animation
+                clip = await loadMixamoAnimation(motion_file_path, vrm, hipsHeight);
+                console.debug(DEBUG_PREFIX,"AAAAAAAAAAAAAA",clip)
+            }
+            else
+            if (motion_file_path.endsWith(".bvh")) {
+                console.debug(DEBUG_PREFIX,"Loading bvh file");
+                clip = await loadBVHAnimation(motion_file_path, vrm, hipsHeight);
+            }
+            else {
+                console.debug(DEBUG_PREFIX,"UNSUPORTED animation file");
+                toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                return;
+            }
         }
-        else
-        if (motion_file_path.endsWith(".bvh")) {
-            console.debug(DEBUG_PREFIX,"Loading bvh file");
-            clip = await loadBVHAnimation(motion_file_path, vrm, hipsHeight);
-        }
-        else {
-            console.debug(DEBUG_PREFIX,"UNSUPORTED animation file"); // TODO throw error
-            return;
+        catch(error) {
+            console.debug(DEBUG_PREFIX,"Something went wrong when loading animation file:",motion_file_path);
+            toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         }
 
         current_avatars[character]["motion"]["name"] = motion_file_path;
