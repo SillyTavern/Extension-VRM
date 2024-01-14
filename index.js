@@ -31,8 +31,6 @@ DONE:
 
 TODO:
     v1.0:
-        - mouth movement
-            - smooth lips speed ?
         - blink smooth and adapt to current expression?
         - Light control
     v2.0:

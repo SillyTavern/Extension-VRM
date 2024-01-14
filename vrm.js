@@ -300,8 +300,7 @@ async function loadModel(character,model_path=null) {
                     "name": "none",
                     "animation": null
                 },
-                "talkEnd": 0,
-                "audioSource": null
+                "talkEnd": 0
             };
 
             updateModel(character);
@@ -574,22 +573,24 @@ async function textTalk(character, instanceId) {
         // Model was removed
         if (current_avatars[character] === undefined)
             break;
-        const vrm = current_avatars[character]["vrm"]
-        const talkEnd = current_avatars[character]["talkEnd"]
-        let mouth_y = 0.0;
-        if (talkEnd > Date.now()) {
-            mouth_y = (Math.sin((talkEnd - Date.now())) + 1) / 2;
-            // Neutralize all expression in case setExpression called in parrallele
-            for(const expression in vrm.expressionManager.expressionMap)
-                vrm.expressionManager.setValue(expression, Math.min(0.25, vrm.expressionManager.getValue(expression)));
-            //vrm.expressionManager.setValue(current_avatars[character]["vrm"]["expression"],0.25);
-            vrm.expressionManager.setValue("aa",mouth_y);
-            //console.debug(DEBUG_PREFIX,"MOVING MOUTH",mouth_y)
-        }
-        else { // Restaure expression
-            vrm.expressionManager.setValue(current_avatars[character]["expression"],1.0);
-            vrm.expressionManager.setValue("aa",0.0);
-            //console.debug(DEBUG_PREFIX,"RESTORE MOUTH",vrm.expressionManager.getValue(current_avatars[character]["expression"]))
+        if (!extension_settings.vrm.tts_lips_sync) {
+            const vrm = current_avatars[character]["vrm"]
+            const talkEnd = current_avatars[character]["talkEnd"]
+            let mouth_y = 0.0;
+            if (talkEnd > Date.now()) {
+                mouth_y = (Math.sin((talkEnd - Date.now())) + 1) / 2;
+                // Neutralize all expression in case setExpression called in parrallele
+                for(const expression in vrm.expressionManager.expressionMap)
+                    vrm.expressionManager.setValue(expression, Math.min(0.25, vrm.expressionManager.getValue(expression)));
+                //vrm.expressionManager.setValue(current_avatars[character]["vrm"]["expression"],0.25);
+                vrm.expressionManager.setValue("aa",mouth_y);
+                //console.debug(DEBUG_PREFIX,"MOVING MOUTH",mouth_y)
+            }
+            else { // Restaure expression
+                vrm.expressionManager.setValue(current_avatars[character]["expression"],1.0);
+                vrm.expressionManager.setValue("aa",0.0);
+                //console.debug(DEBUG_PREFIX,"RESTORE MOUTH",vrm.expressionManager.getValue(current_avatars[character]["expression"]))
+            }
         }
         await delay(100 / mouth_open_speed);
     }
@@ -616,7 +617,7 @@ async function talk(chat_id) {
         return;
     }
 
-    current_avatars[character]["talkEnd"] = Date.now() + text.length * 10;
+    current_avatars[character]["talkEnd"] = Date.now() + text.length * 50;
 }
 
 // handle window resizes
@@ -690,11 +691,19 @@ async function audioTalk(response, character) {
     analyser.connect(javascriptNode);
     javascriptNode.connect(audioContext.destination);
 
+    source.onended = function() {
+        source.stop(0);
+        source.disconnect();
+        analyser.disconnect();
+        javascriptNode.disconnect();
+        current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+    }
+
     const mouththreshold = 10;
     const mouthboost = 10;
 
     let lastUpdate = 0;
-    const LIPS_SYNC_DELAY = 100;
+    const LIPS_SYNC_DELAY = 66;
 
     function onAudioProcess() {
         var array = new Uint8Array(analyser.frequencyBinCount);
@@ -713,21 +722,23 @@ async function audioTalk(response, character) {
         var voweldamp = 53;
         var vowelmin = 12;
         if(lastUpdate < (Date.now() - LIPS_SYNC_DELAY)) {
+            // Neutralize all expression in case setExpression called in parrallele
+            for(const expression in current_avatars[character]["vrm"].expressionManager.expressionMap)
+                current_avatars[character]["vrm"].expressionManager.setValue(expression, Math.min(0.25, current_avatars[character]["vrm"].expressionManager.getValue(expression)));
+
             if (inputvolume > (mouththreshold * 2)) {
-                let new_value = ((average - vowelmin) / voweldamp) * (mouthboost/10);
+                const new_value = ((average - vowelmin) / voweldamp) * (mouthboost/10);
                 current_avatars[character]["vrm"].expressionManager.setValue("aa", new_value);
             }
             else {
-                //current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+                current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
             }
             lastUpdate = Date.now();
-            console.debug(DEBUG_PREFIX,"UPDATE")
         }
     }
 
     javascriptNode.onaudioprocess = onAudioProcess;
     
-    current_avatars[character]["audioSource"] = source;
     var audio = document.getElementById("tts_audio");
     function startTalk() {
         source.start(0);
