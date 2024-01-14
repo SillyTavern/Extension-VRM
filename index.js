@@ -27,11 +27,12 @@ DONE:
 - only full load at start and on reload button
 - Error message for wrong animation files
 - cache animation files
+- tts lip sync
 
 TODO:
     v1.0:
         - mouth movement
-            - tts lip sync
+            - smooth lips speed ?
         - blink smooth and adapt to current expression?
         - Light control
     v2.0:
@@ -59,6 +60,7 @@ import {
 import {
     onEnabledClick,
     onFollowCameraClick,
+    onTtsLipsSyncClick,
     onShowGridClick,
     onCharacterChange,
     onCharacterRefreshClick,
@@ -90,7 +92,7 @@ const defaultSettings = {
     // Global settings
     enabled: false,
     follow_camera: false,
-    camera_type: "default",
+    tts_lips_sync: false,
 
     // Debug
     show_grid: false,
@@ -113,6 +115,7 @@ function loadSettings() {
 
     $('#vrm_enabled_checkbox').prop('checked', extension_settings.vrm.enabled);
     $('#vrm_follow_camera_checkbox').prop('checked', extension_settings.vrm.follow_camera);
+    $('#vrm_tts_lips_sync_checkbox').prop('checked', extension_settings.vrm.tts_lips_sync);
     $('#vrm_show_grid_checkbox').prop('checked', extension_settings.vrm.show_grid);
 
     $('#vrm_character_select').on('change', onCharacterChange);
@@ -189,6 +192,7 @@ jQuery(async () => {
 
     $('#vrm_enabled_checkbox').on('click', onEnabledClick);
     $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
+    $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
 
     $('#vrm_reload_button').on('click', async () => {

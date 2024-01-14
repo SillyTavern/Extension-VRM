@@ -301,6 +301,7 @@ async function loadModel(character,model_path=null) {
                     "animation": null
                 },
                 "talkEnd": 0,
+                "audioSource": null
             };
 
             updateModel(character);
@@ -595,6 +596,10 @@ async function textTalk(character, instanceId) {
 }
 
 async function talk(chat_id) {
+    // TTS lip sync overide
+    if (extension_settings.vrm.tts_lips_sync)
+        return;
+
     // No model for user or system
     if (getContext().chat[chat_id].is_user || getContext().chat[chat_id].is_system)
         return;
@@ -655,3 +660,81 @@ function getVRM(character) {
         return undefined;
     return current_avatars[character]["vrm"];
 }
+
+// DBG
+async function audioTalk(response, character) {
+    // Option disable
+    if (!extension_settings.vrm.tts_lips_sync)
+        return response;
+
+    console.debug(DEBUG_PREFIX,"Received lipsync",response, character);
+
+    const audioContext = new(window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    analyser.smoothingTimeConstant = 0.5;
+    analyser.fftSize = 1024;
+
+    const responseCopy = response.clone();
+    const blob = await responseCopy.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+
+    console.debug(DEBUG_PREFIX,"Data",arrayBuffer);
+
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(analyser);
+
+    const javascriptNode = audioContext.createScriptProcessor(256, 1, 1);
+    analyser.connect(javascriptNode);
+    javascriptNode.connect(audioContext.destination);
+
+    const mouththreshold = 10;
+    const mouthboost = 10;
+
+    let lastUpdate = 0;
+    const LIPS_SYNC_DELAY = 100;
+
+    function onAudioProcess() {
+        var array = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(array);
+        var values = 0;
+
+        var length = array.length;
+        for (var i = 0; i < length; i++) {
+            values += array[i];
+        }
+
+        // audio in expressed as one number
+        var average = values / length;
+        var inputvolume = average;
+
+        var voweldamp = 53;
+        var vowelmin = 12;
+        if(lastUpdate < (Date.now() - LIPS_SYNC_DELAY)) {
+            if (inputvolume > (mouththreshold * 2)) {
+                let new_value = ((average - vowelmin) / voweldamp) * (mouthboost/10);
+                current_avatars[character]["vrm"].expressionManager.setValue("aa", new_value);
+            }
+            else {
+                //current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+            }
+            lastUpdate = Date.now();
+            console.debug(DEBUG_PREFIX,"UPDATE")
+        }
+    }
+
+    javascriptNode.onaudioprocess = onAudioProcess;
+    
+    current_avatars[character]["audioSource"] = source;
+    var audio = document.getElementById("tts_audio");
+    function startTalk() {
+        source.start(0);
+        audio.removeEventListener("onplay", startTalk);
+        //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
+    }
+    audio.onplay = startTalk;
+}
+
+window['vrmLipSync'] = audioTalk;

@@ -26,6 +26,7 @@ import { exp } from './lib/jsm/nodes/Nodes.js';
 export {
     onEnabledClick,
     onFollowCameraClick,
+    onTtsLipsSyncClick,
     onShowGridClick,
     onCharacterChange,
     onCharacterRefreshClick,
@@ -57,6 +58,11 @@ async function onEnabledClick() {
 
 async function onFollowCameraClick() {
     extension_settings.vrm.follow_camera = $('#vrm_follow_camera_checkbox').is(':checked');
+    saveSettingsDebounced();
+}
+
+async function onTtsLipsSyncClick() {
+    extension_settings.vrm.tts_lips_sync = $('#vrm_tts_lips_sync_checkbox').is(':checked');
     saveSettingsDebounced();
 }
 
@@ -254,7 +260,7 @@ async function onAnimationMappingChange(type) {
 
     saveSettingsDebounced();
 
-    setExpression(expression);
+    setExpression(character, expression);
     setMotion(character, motion, true);
 }
 
@@ -394,7 +400,7 @@ async function updateExpressionMapping(expression) {
     extension_settings.vrm.model_settings[model]['classify_mapping'][expression] = { 'expression': model_expression, 'motion': model_motion };
     saveSettingsDebounced();
 
-    setExpression(model_expression);
+    setExpression(character, model_expression);
 
     setMotion(character, model_motion, true, true, true);
     console.debug(DEBUG_PREFIX, 'Updated expression mapping:', expression, extension_settings.vrm.model_settings[model]['classify_mapping'][expression]);
