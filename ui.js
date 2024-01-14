@@ -212,31 +212,34 @@ async function onModelChange() {
 }
 
 async function onModelScaleChange() {
+    const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
     extension_settings.vrm.model_settings[model_path]['scale'] = Number($('#vrm_model_scale').val());
     $('#vrm_model_scale_value').text(extension_settings.vrm.model_settings[model_path]['scale']);
     saveSettingsDebounced();
-    updateModel(model_path);
+    updateModel(character);
 }
 
 async function onModelPositionChange() {
+    const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
     extension_settings.vrm.model_settings[model_path]['x'] = Number($('#vrm_model_position_x').val());
     extension_settings.vrm.model_settings[model_path]['y'] = Number($('#vrm_model_position_y').val());
     $('#vrm_model_position_x_value').text(extension_settings.vrm.model_settings[model_path]['x']);
     $('#vrm_model_position_y_value').text(extension_settings.vrm.model_settings[model_path]['y']);
     saveSettingsDebounced();
-    updateModel(model_path);
+    updateModel(character,);
 }
 
 async function onModelRotationChange() {
+    const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
     extension_settings.vrm.model_settings[model_path]['rx'] = Number($('#vrm_model_rotation_x').val());
     extension_settings.vrm.model_settings[model_path]['ry'] = Number($('#vrm_model_rotation_y').val());
     $('#vrm_model_rotation_x_value').text(extension_settings.vrm.model_settings[model_path]['rx']);
     $('#vrm_model_rotation_y_value').text(extension_settings.vrm.model_settings[model_path]['ry']);
     saveSettingsDebounced();
-    updateModel(model_path);
+    updateModel(character);
 }
 
 async function onAnimationMappingChange(type) {

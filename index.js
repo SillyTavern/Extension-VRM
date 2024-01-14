@@ -33,6 +33,7 @@ TODO:
     v1.0:
         - blink smooth and adapt to current expression?
         - Light control
+        - Hit boxes
     v2.0:
         - Optional animation cache ?
         - click interaction

@@ -547,11 +547,13 @@ function blink(character, instanceId) {
     setTimeout(() => {
         if (current_avatars[character] !== undefined) {
             current_avatars[character]["vrm"].expressionManager.setValue("blink",current_blink);
+
             //console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
         }
     }, blinktimeout);
     
     if (current_avatars[character] !== undefined) {
+        //console.debug(DEBUG_PREFIX,"DEBUG",current_avatars[character]["vrm"].expressionManager.getExpression(current_avatars[character]["expression"]));
         current_avatars[character]["vrm"].expressionManager.setValue("blink",1.0-current_blink);
         current_avatars[character]["vrm"].expressionManager.setValue(current_avatars[character]["expression"],1);
     }
@@ -649,10 +651,10 @@ async function updateModel(character) {
         object_container.rotation.y = extension_settings.vrm.model_settings[model_path]['ry'];
         object_container.rotation.z = 0.0; // In case somehow it get away from 0
 
-        //console.debug(DEBUG_PREFIX,"Updated model:")
-        //console.debug(DEBUG_PREFIX,"Scale:",object_container.scale)
-        //console.debug(DEBUG_PREFIX,"Position:",object_container.position)
-        //console.debug(DEBUG_PREFIX,"Rotation:",object_container.rotation)
+        console.debug(DEBUG_PREFIX,"Updated model:")
+        console.debug(DEBUG_PREFIX,"Scale:",object_container.scale)
+        console.debug(DEBUG_PREFIX,"Position:",object_container.position)
+        console.debug(DEBUG_PREFIX,"Rotation:",object_container.rotation)
     }
 }
 
