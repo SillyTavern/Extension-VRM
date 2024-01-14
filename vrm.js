@@ -696,7 +696,8 @@ async function audioTalk(response, character) {
         source.disconnect();
         analyser.disconnect();
         javascriptNode.disconnect();
-        current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+        if (current_avatars[character] !== undefined)
+            current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
     }
 
     const mouththreshold = 10;
@@ -722,16 +723,18 @@ async function audioTalk(response, character) {
         var voweldamp = 53;
         var vowelmin = 12;
         if(lastUpdate < (Date.now() - LIPS_SYNC_DELAY)) {
-            // Neutralize all expression in case setExpression called in parrallele
-            for(const expression in current_avatars[character]["vrm"].expressionManager.expressionMap)
-                current_avatars[character]["vrm"].expressionManager.setValue(expression, Math.min(0.25, current_avatars[character]["vrm"].expressionManager.getValue(expression)));
+            if (current_avatars[character] !== undefined) {
+                // Neutralize all expression in case setExpression called in parrallele
+                for(const expression in current_avatars[character]["vrm"].expressionManager.expressionMap)
+                    current_avatars[character]["vrm"].expressionManager.setValue(expression, Math.min(0.25, current_avatars[character]["vrm"].expressionManager.getValue(expression)));
 
-            if (inputvolume > (mouththreshold * 2)) {
-                const new_value = ((average - vowelmin) / voweldamp) * (mouthboost/10);
-                current_avatars[character]["vrm"].expressionManager.setValue("aa", new_value);
-            }
-            else {
-                current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+                if (inputvolume > (mouththreshold * 2)) {
+                    const new_value = ((average - vowelmin) / voweldamp) * (mouthboost/10);
+                    current_avatars[character]["vrm"].expressionManager.setValue("aa", new_value);
+                }
+                else {
+                    current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+                }
             }
             lastUpdate = Date.now();
         }
