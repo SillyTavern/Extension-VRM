@@ -178,7 +178,7 @@ async function loadBVHAnimation( url, vrm, currentVRMHipsHeight ) {
     const loader = new BVHLoader();
     return loader.loadAsync( url ).then( ( result ) => {
         
-        console.debug(DEBUG_PREFIX, "Loaded bvh file", result);
+        //console.debug(DEBUG_PREFIX, "Loaded bvh file", result);
 
         const skeletonHelper = new THREE.SkeletonHelper( result.skeleton.bones[ 0 ] );
         skeletonHelper.name = "BVHtest";
@@ -216,10 +216,12 @@ async function loadBVHAnimation( url, vrm, currentVRMHipsHeight ) {
 
 				// Store rotations of rest-pose.
 				bvhRigNode.getWorldQuaternion( restRotationInverse ).invert();
-                if (bvhRigNode.parent)
+                if (bvhRigNode.parent){
 				    bvhRigNode.parent.getWorldQuaternion( parentRestWorldRotation );
-                else
-                    console.debug(DEBUG_PREFIX,"WARNING", bvhRigNode, "has no parent!");
+				}
+                else {
+                    //console.debug(DEBUG_PREFIX,"WARNING", bvhRigNode, "has no parent!");
+				}
 
 				if ( track instanceof THREE.QuaternionKeyframeTrack ) {
 

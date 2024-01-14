@@ -9,11 +9,15 @@ import {
 
 import {
     loadScene,
-    loadModel,
+    setModel,
+    unloadModel,
     getVRM,
     setExpression,
     setMotion,
-    updateModel
+    updateModel,
+    clearModelCache,
+    clearAnimationCache,
+    loadAllModels
 } from "./vrm.js";
 
 import {
@@ -27,6 +31,8 @@ export {
     onEnabledClick,
     onFollowCameraClick,
     onTtsLipsSyncClick,
+    onModelCacheClick,
+    onAnimationCacheClick,
     onShowGridClick,
     onCharacterChange,
     onCharacterRefreshClick,
@@ -41,13 +47,18 @@ export {
     onModelPositionChange,
     onModelRotationChange,
     onAnimationMappingChange,
+    models_files,
     animations_files
 };
 
 let characters_list = [];
-let characters_models = {};
+
+let models_files = [];
+let models_files_label = [];
+
 let animations_files = [];
 let animations_groups = [];
+
 
 async function onEnabledClick() {
     extension_settings.vrm.enabled = $('#vrm_enabled_checkbox').is(':checked');
@@ -64,6 +75,24 @@ async function onFollowCameraClick() {
 async function onTtsLipsSyncClick() {
     extension_settings.vrm.tts_lips_sync = $('#vrm_tts_lips_sync_checkbox').is(':checked');
     saveSettingsDebounced();
+}
+
+async function onModelCacheClick() {
+    extension_settings.vrm.models_cache = $('#vrm_models_cache_checkbox').is(':checked');
+    saveSettingsDebounced();
+    if (!extension_settings.vrm.models_cache)
+        clearModelCache()
+    else
+        loadAllModels(currentChatMembers());
+}
+
+async function onAnimationCacheClick() {
+    extension_settings.vrm.animations_cache = $('#vrm_animations_cache_checkbox').is(':checked');
+    saveSettingsDebounced();
+    if (!extension_settings.vrm.animations_cache)
+        clearAnimationCache();
+    else
+        loadAllModels(currentChatMembers());
 }
 
 async function onShowGridClick() {
@@ -88,14 +117,13 @@ async function onCharacterChange() {
         .append('<option value="none">None</option>')
         .val('none');
 
-    if (characters_models[character] !== undefined) {
-        for (const i of characters_models[character]) {
-            //console.debug(DEBUG_PREFIX,"DEBUG",i)
-            const model_folder = i[0];
-            const model_settings_path = i[1];
-            $('#vrm_model_select').append(new Option(model_folder, model_settings_path));
-        }
+    for (const i of models_files_label) {
+        //console.debug(DEBUG_PREFIX,"DEBUG",i)
+        const model_folder = i[0];
+        const model_settings_path = i[1];
+        $('#vrm_model_select').append(new Option(model_folder, model_settings_path));
     }
+    
 
     if (extension_settings.vrm.character_model_mapping[character] !== undefined) {
         $('#vrm_model_select').val(extension_settings.vrm.character_model_mapping[character]);
@@ -122,7 +150,7 @@ async function onCharacterRemoveClick() {
     $('#vrm_model_settings').hide();
     delete extension_settings.vrm.character_model_mapping[character];
     saveSettingsDebounced();
-    await loadModel(character,null);
+    await unloadModel(character);
     console.debug(DEBUG_PREFIX, 'Deleted all settings for', character);
 }
 
@@ -160,7 +188,7 @@ async function onModelChange() {
     if (model_path == 'none') {
         delete extension_settings.vrm.character_model_mapping[character];
         saveSettingsDebounced();
-        await loadModel(character,null);
+        await unloadModel(character);
         return;
     }
 
@@ -181,6 +209,7 @@ async function onModelChange() {
             'animation_default': { 'expression': 'none', 'motion': 'none' },
             //'animation_click': { 'expression': 'none', 'motion': 'none', 'message': '' },
             'classify_mapping': {},
+            'hit_box_mapping': {}
         };
 
         for (const expression of CLASSIFY_EXPRESSIONS) {
@@ -191,7 +220,7 @@ async function onModelChange() {
     }
 
     //await loadScene();
-    await loadModel(character,model_path);
+    await setModel(character,model_path);
     await loadModelUi(use_default_settings);
     
     // Load default expression/motion
@@ -464,16 +493,16 @@ async function updateCharactersModels(refreshButton = false) {
 
     console.debug(DEBUG_PREFIX, 'Models from assets folder:',assets['vrm']['model']);
 
-    for (const character of chat_members) {
-        if (refreshButton || characters_models[character] === undefined) {
-            characters_models[character] = [];
-            for (const entry of assets['vrm']['model']) {
-                let label = entry.replaceAll('\\', '/').replace(".vrm","");
-                label = label.substring(label.lastIndexOf('/')+1);
-                characters_models[character].push([label,entry]);
-            }
-            console.debug(DEBUG_PREFIX, 'Updated models of', character);
+    if (refreshButton || models_files.length == 0) {
+        models_files = [];
+        models_files_label = [];
+        for (const entry of assets['vrm']['model']) {
+            let label = entry.replaceAll('\\', '/').replace(".vrm","");
+            label = label.substring(label.lastIndexOf('/')+1);
+            models_files.push(entry);
+            models_files_label.push([label,entry]);
         }
+        console.debug(DEBUG_PREFIX, 'Updated models list');
     }
 
     animations_files = assets['vrm']['animation'];
@@ -484,7 +513,7 @@ async function updateCharactersModels(refreshButton = false) {
             animations_groups.push(animation_group_name);
     }
 
-    console.debug(DEBUG_PREFIX, 'Updated models to:', characters_models, animations_files);
+    console.debug(DEBUG_PREFIX, 'Updated models to:', models_files, animations_files);
     $('#vrm_character_select').trigger('change');
 }
 

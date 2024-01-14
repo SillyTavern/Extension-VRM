@@ -28,13 +28,22 @@ DONE:
 - Error message for wrong animation files
 - cache animation files
 - tts lip sync
+- animation cache
+    - optional
+    - model specific
+    - when loading a model all its animation group are cached
+    - playing a non cached animation will cached it
+- vrm cache
+    - optional
+    - keep vrm model previously loaded for instant switch between models
 
 TODO:
     v1.0:
-        - blink smooth and adapt to current expression?
         - Light control
         - Hit boxes
     v2.0:
+        - blink smooth and adapt to current expression?
+            - The expression define the blink blend can't do much for now
         - Optional animation cache ?
         - click interaction
         - other kind of camera
@@ -43,7 +52,7 @@ TODO:
         - Model Gallery
 
 */
-import { eventSource, event_types, getCharacters } from "../../../../script.js";
+import { eventSource, event_types, getCharacters, saveSettings, saveSettingsDebounced } from "../../../../script.js";
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
 import { registerSlashCommand } from '../../../slash-commands.js';
 export { MODULE_NAME };
@@ -54,12 +63,15 @@ import {
     setExpression,
     setMotion,
     updateExpression,
-    talk
+    talk,
+    setModel
 } from "./vrm.js";
 import {
     onEnabledClick,
     onFollowCameraClick,
     onTtsLipsSyncClick,
+    onModelCacheClick,
+    onAnimationCacheClick,
     onShowGridClick,
     onCharacterChange,
     onCharacterRefreshClick,
@@ -74,7 +86,8 @@ import {
     onModelPositionChange,
     onModelRotationChange,
     onAnimationMappingChange,
-    animations_files
+    animations_files,
+    models_files
 } from "./ui.js";
 import "./controls.js";
 
@@ -93,6 +106,10 @@ const defaultSettings = {
     follow_camera: false,
     tts_lips_sync: false,
 
+    // Performances
+    models_cache: false,
+    animations_cache: false,
+
     // Debug
     show_grid: false,
 
@@ -108,13 +125,23 @@ function loadSettings() {
         extension_settings.vrm = {};
 
     // Ensure good format
-    if (Object.keys(extension_settings.vrm).length === 0) {
-        Object.assign(extension_settings.vrm, defaultSettings);
+    for (const key of Object.keys(extension_settings.vrm)) {
+        // delete spurious keys
+        if (!Object.keys(defaultSettings).includes(key))
+            delete extension_settings.vrm[key];
     }
+    for (const key of Object.keys(defaultSettings)) {
+        // add missing keys
+        if (!Object.keys(extension_settings.vrm).includes(key))
+            extension_settings.vrm[key] = defaultSettings[key];
+    }
+    saveSettingsDebounced();
 
     $('#vrm_enabled_checkbox').prop('checked', extension_settings.vrm.enabled);
     $('#vrm_follow_camera_checkbox').prop('checked', extension_settings.vrm.follow_camera);
     $('#vrm_tts_lips_sync_checkbox').prop('checked', extension_settings.vrm.tts_lips_sync);
+    $('#vrm_models_cache_checkbox').prop('checked', extension_settings.vrm.models_cache);
+    $('#vrm_animations_cache_checkbox').prop('checked', extension_settings.vrm.animations_cache);
     $('#vrm_show_grid_checkbox').prop('checked', extension_settings.vrm.show_grid);
 
     $('#vrm_character_select').on('change', onCharacterChange);
@@ -192,6 +219,8 @@ jQuery(async () => {
     $('#vrm_enabled_checkbox').on('click', onEnabledClick);
     $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
     $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
+    $('#vrm_models_cache_checkbox').on('click', onModelCacheClick);
+    $('#vrm_animations_cache_checkbox').on('click', onAnimationCacheClick);
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
 
     $('#vrm_reload_button').on('click', async () => {
@@ -205,10 +234,51 @@ jQuery(async () => {
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
     moduleWorker();
     */
-   
-    registerSlashCommand('vrmexpression', setExpressionSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model expression (example: /vrmexpression happy)', true, true);
-    registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: /vrmexpression idle)', true, true);
+    registerSlashCommand('vrmmodel', setModelSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model (example: "/vrmmodel Seraphina.vrm" or "/vrmmodel character=Seraphina model=Seraphina.vrm")', true, true);
+    registerSlashCommand('vrmexpression', setExpressionSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model expression (example: "/vrmexpression happy" or "/vrmexpression character=Seraphina expression=happy")', true, true);
+    registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: "/vrmmotion idle" or "/vrmmotion character=Seraphina motion=idle loop=true random=false")', true, true);
 });
+
+// Example /vrmmotion anger
+async function setModelSlashCommand(args, model) {
+    let character = undefined;
+    if (!model && !args["model"]) {
+        console.log('No model provided');
+        return;
+    }
+
+    if (args["character"])
+        character = args["character"];
+
+    if (args["model"])
+        motion = args["model"];
+
+    if (character === undefined) {
+        const characters = currentChatMembers();
+        if(characters.length == 0) {
+            console.log('No character provided and none detected in current chat');
+            return;
+        }
+        character = characters[0];
+    }
+
+    model = model.trim();
+    console.debug(DEBUG_PREFIX,'Command vrmmodel received for character=',character,"model=", model);
+
+    const fuse = new Fuse(models_files);
+    const results = fuse.search(model);
+    const fileItem = results[0]?.item;
+
+    if (fileItem)
+    {
+        $('#vrm_character_select').val(character)
+        $('#vrm_model_select').val(fileItem)
+        onModelChange();
+    }
+    else{
+        console.debug(DEBUG_PREFIX,'Model not found in', models_files);
+    }
+}
 
 async function setExpressionSlashCommand(args, expression) {
     let character = undefined;
@@ -272,7 +342,7 @@ async function setMotionSlashCommand(args, motion) {
 
     motion = motion.trim();
     console.debug(DEBUG_PREFIX,'Command motion received for character=',character,"motion=", motion,"loop=",loop, "random=",random);
-
+    
     const fuse = new Fuse(animations_files);
     const results = fuse.search(motion);
     const fileItem = results[0]?.item;

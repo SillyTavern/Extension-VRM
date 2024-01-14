@@ -110,7 +110,6 @@ async function pointerDown(event) {
                 isDragging = true;
                 isRotating = false;
                 isScaling = false;
-                //console.debug(DEBUG_PREFIX,"Dragging ",dragObject.character);
             }
 
             // Rotation
@@ -118,13 +117,11 @@ async function pointerDown(event) {
                 isDragging = false;
                 isRotating = true;
                 isScaling = false;
-                //console.debug(DEBUG_PREFIX,"Rotating ",dragObject.character);
             }
 
             // Scale
             if(isLeftClick && event.shiftKey && !event.ctrlKey){
                 isScaling = true;
-                //console.debug(DEBUG_PREFIX,"Scaling ",dragObject.character);
             }
         }
     }
@@ -192,7 +189,7 @@ async function wheel(event) {
     //event.preventDefault();
     // UI between mouse and canvas
     const element = document.elementFromPoint(event.clientX, event.clientY);
-    if (element.id != VRM_CANVAS_ID)
+    if (element != null && element.id != VRM_CANVAS_ID)
         return;
 
     const mouseX = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;

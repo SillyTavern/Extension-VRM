@@ -13,7 +13,8 @@ export {
     MAX_SCALE,
     ANIMATION_FADE_TIME,
     SPRITE_DIV,
-    VN_MODE_DIV
+    VN_MODE_DIV,
+    DEFAULT_SCALE
 }
 
 const MODULE_NAME = "VRM";
@@ -26,6 +27,8 @@ const MAX_SCALE = 30;
 const ANIMATION_FADE_TIME = 0.3;
 const SPRITE_DIV = 'expression-wrapper';
 const VN_MODE_DIV = 'visual-novel-wrapper';
+
+const DEFAULT_SCALE = 3.0
 
 const JS_LIBS = [
 "es-module-shims.js"
