@@ -831,8 +831,6 @@ async function audioTalk(response, character) {
     const blob = await responseCopy.blob();
     const arrayBuffer = await blob.arrayBuffer();
 
-    console.debug(DEBUG_PREFIX,"Data",arrayBuffer);
-
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
     const source = audioContext.createBufferSource();
@@ -870,7 +868,7 @@ async function audioTalk(response, character) {
 
         // audio in expressed as one number
         var average = values / length;
-        var inputvolume = average;
+        var inputvolume = average * (audioContext.sampleRate/48000); // Normalize the treshold
 
         var voweldamp = 53;
         var vowelmin = 12;

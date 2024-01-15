@@ -42,6 +42,7 @@ DONE:
 
 TODO:
     v1.0:
+        - check normalization of audio for lip sync
         - option interact through ui
         - Hit box ui and fire expression/animation/text auto-send option
             - set default
