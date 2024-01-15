@@ -68,6 +68,7 @@ let light = undefined;
 
 // gltf and vrm
 let currentInstanceId = 0;
+let modelId = 0;
 let clock = undefined;
 const lookAtTarget = new THREE.Object3D();
 
@@ -111,21 +112,6 @@ function animate() {
                     bone.getWorldQuaternion(current_avatars[character]["hitboxes"][body_part]["offsetContainer"].quaternion);
                     current_avatars[character]["hitboxes"][body_part]["offsetContainer"].scale.copy(objectContainer.scale);
                     current_avatars[character]["hitboxes"][body_part]["offsetContainer"].visible = extension_settings.vrm.show_grid;
-                    /*
-                    const position = new THREE.Vector3();
-                    const rotation = new THREE.Vector3(0,0,0);
-                    const offset = HITBOXES[body_part]["offset"];
-                    const quaternion = new THREE.Quaternion();
-                    position.setFromMatrixPosition(bone.matrixWorld);
-                    objectContainer.worldToLocal(position);
-                    bone.getWorldQuaternion(quaternion);
-                    rotation.applyQuaternion(quaternion).normalize().multiplyScalar(1);
-                    rotation.sub(bone.rotation);
-                    position.add(new THREE.Vector3(offset.x,offset.y,offset.z));
-                    current_avatars[character]["hitboxes"][body_part].position.set(position.x,position.y,position.z);
-                    current_avatars[character]["hitboxes"][body_part].rotation.set(rotation.x,rotation.y,rotation.z);
-                    current_avatars[character]["hitboxes"][body_part].visible = extension_settings.vrm.show_grid;
-                    */
                 }
             }
         }
@@ -238,7 +224,9 @@ async function setModel(character,model_path) {
     await unloadModel(character);
 
     // Set as character model and start animations
+    modelId++;
     current_avatars[character] = model;
+    current_avatars[character]["id"] = modelId;
     current_avatars[character]["objectContainer"].name = VRM_CONTAINER_NAME+"_"+character;
     current_avatars[character]["collider"].name = VRM_COLLIDER_NAME+"_"+character;
 
@@ -248,20 +236,22 @@ async function setModel(character,model_path) {
 
     if (expression !== undefined && expression != "none") {
         console.debug(DEBUG_PREFIX,"Set default expression to",expression);
-        setExpression(character, expression);
+        await setExpression(character, expression);
     }
     if (motion !== undefined && motion != "none") {
         console.debug(DEBUG_PREFIX,"Set default motion to",motion);
-        setMotion(character, motion, true);
+        await setMotion(character, motion, true);
     }
 
-    blink(character, currentInstanceId);
-    textTalk(character, currentInstanceId);
+    blink(character, modelId);
+    textTalk(character, modelId);
     current_avatars[character]["objectContainer"].visible = true;
     current_avatars[character]["collider"].visible = extension_settings.vrm.show_grid;
     
     scene.add(current_avatars[character]["objectContainer"]);
     scene.add(current_avatars[character]["collider"]);
+    for(const hitbox in current_avatars[character]["hitboxes"])
+        scene.add(current_avatars[character]["hitboxes"][hitbox]["offsetContainer"]);
 }
 
 async function unloadModel(character) {
@@ -277,6 +267,15 @@ async function unloadModel(character) {
             console.debug(DEBUG_PREFIX,"REMOVING",current_avatars[character]["hitboxes"][hitbox]["offsetContainer"])
             scene.remove(scene.getObjectByName(current_avatars[character]["hitboxes"][hitbox]["offsetContainer"].name));
         }
+
+        // unload animations
+        current_avatars[character]["animation_mixer"].stopAllAction();
+        if (current_avatars[character]["motion"]["animation"]  !== null) {
+            current_avatars[character]["motion"]["animation"].stop();
+            current_avatars[character]["motion"]["animation"].terminated = true;
+            current_avatars[character]["motion"]["animation"] = null;
+        }
+
         delete current_avatars[character];
 
         container.visible = false;
@@ -359,7 +358,7 @@ async function loadModel(model_path) { // Only cache the model if character=null
     verticalOffset.position.y = -hipsHeight; // offset model for rotate on "center"
     verticalOffset.add(vrm.scene)
     object_container.add(verticalOffset);
-    object_container.parent = scene;
+    //object_container.parent = scene;
     
     // Collider used to detect mouse click
     const boundingBox = new THREE.Box3(new THREE.Vector3(-0.5,-1.0,-0.5), new THREE.Vector3(0.5,1.0,0.5));
@@ -378,10 +377,11 @@ async function loadModel(model_path) { // Only cache the model if character=null
     }));
     collider.name = VRM_COLLIDER_NAME;
     collider.material.side = THREE.BackSide;
-    scene.add(collider);
+    //scene.add(collider);
     
     // Avatar dynamic settings
     const model = {
+        "id": null,
         "model_path": model_path,
         "vrm": vrm, // the actual vrm object
         "hipsHeight": hipsHeight, // its original hips height, used for scaling loaded animation
@@ -428,13 +428,13 @@ async function loadModel(model_path) { // Only cache the model if character=null
             if (vrm.meta?.metaVersion === '1')
                 collider.position.set(offset.x/hipsHeight,offset.y/hipsHeight,-offset.z/hipsHeight);
             else
-                collider.position.set(offset.x/hipsHeight,offset.y/hipsHeight,offset.z/hipsHeight);
+                collider.position.set(-offset.x/hipsHeight,offset.y/hipsHeight,offset.z/hipsHeight);
             // Create a offset container
             const offset_container = new THREE.Group(); // First container to scale/position center model
             offset_container.name = model_path+"_offsetContainer_hitbox_"+body_part;
             offset_container.visible = true;
             offset_container.add(collider);
-            scene.add(offset_container)
+            //scene.add(offset_container)
 
             //object_container.localToWorld(position);
             //position.add(new THREE.Vector3(offset.x,offset.y,offset.z));
@@ -573,6 +573,7 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
             current_motion_animation.fadeOut(ANIMATION_FADE_TIME);
             current_motion_animation.terminated = true;
         }
+        current_avatars[character]["motion"]["name"] = "none";
         current_avatars[character]["motion"]["animation"] = null;
         return;
     }
@@ -606,7 +607,6 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
                 animations_cache[model_path][motion_file_path] = clip;
         }
 
-        current_avatars[character]["motion"]["name"] = motion_file_path;
 
         // create AnimationMixer for VRM
         const new_motion_animation = mixer.clipAction( clip );
@@ -626,7 +626,9 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
             .fadeIn( ANIMATION_FADE_TIME )
             .play();
         new_motion_animation.terminated = false;
+        console.debug(DEBUG_PREFIX,"Loading new animation",motion_file_path);
 
+        current_avatars[character]["motion"]["name"] = motion_file_path;
         current_avatars[character]["motion"]["animation"] = new_motion_animation;
 
         // Fade out animation after full loop
@@ -677,45 +679,48 @@ async function updateExpression(chat_id) {
 
     console.debug(DEBUG_PREFIX,'Playing expression',expression,':', model_expression, model_motion);
 
-    setExpression(character, model_expression);
-    setMotion(character, model_motion);
+    await setExpression(character, model_expression);
+    await setMotion(character, model_motion);
 }
 
 
 // Blink
-function blink(character, instanceId) {
-    var blinktimeout = Math.floor(Math.random() * 250) + 50;
-    const current_blink = 0;
-    setTimeout(() => {
-        if (current_avatars[character] !== undefined) {
-            current_avatars[character]["vrm"].expressionManager.setValue("blink",current_blink);
-
-            //console.debug(DEBUG_PREFIX,"Blinking",blinktimeout)
-        }
-    }, blinktimeout);
-    
-    if (current_avatars[character] !== undefined) {
-        //console.debug(DEBUG_PREFIX,"DEBUG",current_avatars[character]["vrm"].expressionManager.getExpression(current_avatars[character]["expression"]));
-        current_avatars[character]["vrm"].expressionManager.setValue("blink",1.0-current_blink);
+function blink(character, modelId) {
+    //console.debug(DEBUG_PREFIX,"Blink call:",character,modelId)
+    if (current_avatars[character] === undefined || current_avatars[character]["id"] != modelId) {
+        console.debug(DEBUG_PREFIX,"Stopping blink model is no more loaded:",character,modelId)
+        return;
     }
 
+    const vrm = current_avatars[character]["vrm"];
+
+    // Hold eyes closed
+    var blinktimeout = Math.floor(Math.random() * 250) + 50;
+    setTimeout(() => {
+            vrm.expressionManager.setValue("blink",0);
+    }, blinktimeout);
+    
+    // Open eyes
+    vrm.expressionManager.setValue("blink",1.0);
+
+    // Keep eyes open
     var rand = Math.round(Math.random() * 10000) + 1000;
     setTimeout(function () {
-        if (current_avatars[character] !== undefined && instanceId == currentInstanceId)
-            blink(character,instanceId);
-        else
-            console.debug(DEBUG_PREFIX,"Stopping blink model is no more loaded.")
+            blink(character,modelId);
     }, rand);
 }
 
 // One run for each character
 // Animate mouth if talkEnd is set to a future time
-async function textTalk(character, instanceId) {
+// Terminated when model is unset
+// Overrided by tts lip sync option
+async function textTalk(character, modelId) {
     const mouth_open_speed = 1.5;
-    while (currentInstanceId == instanceId) {
-        // Model was removed
-        if (current_avatars[character] === undefined)
-            break;
+    // Model still here
+    while (current_avatars[character] !== undefined && current_avatars[character]["id"] == modelId) {
+        //console.debug(DEBUG_PREFIX,"text talk loop:",character,modelId)
+        
+        // Overrided by lip sync option
         if (!extension_settings.vrm.tts_lips_sync) {
             const vrm = current_avatars[character]["vrm"]
             const talkEnd = current_avatars[character]["talkEnd"]
@@ -725,20 +730,21 @@ async function textTalk(character, instanceId) {
                 // Neutralize all expression in case setExpression called in parrallele
                 for(const expression in vrm.expressionManager.expressionMap)
                     vrm.expressionManager.setValue(expression, Math.min(0.25, vrm.expressionManager.getValue(expression)));
-                //vrm.expressionManager.setValue(current_avatars[character]["vrm"]["expression"],0.25);
                 vrm.expressionManager.setValue("aa",mouth_y);
-                //console.debug(DEBUG_PREFIX,"MOVING MOUTH",mouth_y)
             }
             else { // Restaure expression
                 vrm.expressionManager.setValue(current_avatars[character]["expression"],1.0);
                 vrm.expressionManager.setValue("aa",0.0);
-                //console.debug(DEBUG_PREFIX,"RESTORE MOUTH",vrm.expressionManager.getValue(current_avatars[character]["expression"]))
             }
         }
         await delay(100 / mouth_open_speed);
     }
+
+    console.debug(DEBUG_PREFIX,"Stopping text talk loop model is no more loaded:",character,modelId);
 }
 
+// Add text duration to current_avatars[character]["talkEnd"]
+// Overrided by tts lip sync option
 async function talk(chat_id) {
     // TTS lip sync overide
     if (extension_settings.vrm.tts_lips_sync)
@@ -775,6 +781,7 @@ function onWindowResize(){
     }
 }
 
+// Update a character model to fit the saved settings
 async function updateModel(character) {
     if (current_avatars[character] !== undefined) {
         const object_container = current_avatars[character]["objectContainer"];
@@ -792,13 +799,14 @@ async function updateModel(character) {
         object_container.rotation.y = extension_settings.vrm.model_settings[model_path]['ry'];
         object_container.rotation.z = 0.0; // In case somehow it get away from 0
 
-        console.debug(DEBUG_PREFIX,"Updated model:")
+        console.debug(DEBUG_PREFIX,"Updated model:",character)
         console.debug(DEBUG_PREFIX,"Scale:",object_container.scale)
         console.debug(DEBUG_PREFIX,"Position:",object_container.position)
         console.debug(DEBUG_PREFIX,"Rotation:",object_container.rotation)
     }
 }
 
+// Currently loaded character VRM accessor
 function getVRM(character) {
     if (current_avatars[character] === undefined)
         return undefined;
@@ -815,6 +823,8 @@ function clearAnimationCache() {
     console.debug(DEBUG_PREFIX,"Cleared animation cache");
 }
 
+// Perform audio lip sync
+// Overried text mouth movement
 async function audioTalk(response, character) {
     // Option disable
     if (!extension_settings.vrm.tts_lips_sync)

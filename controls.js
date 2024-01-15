@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { saveSettingsDebounced } from '../../../../script.js';
-import { extension_settings } from '../../../extensions.js';
+import { saveSettingsDebounced, sendMessageAsUser } from '../../../../script.js';
+import { extension_settings, getContext } from '../../../extensions.js';
 
 import {
     DEBUG_PREFIX,
@@ -30,6 +30,8 @@ let isRotating = false;
 let isScaling = false;
 let dragCharacter = undefined;
 let isMouseDown = false;
+
+let previous_interaction = { 'character': '', 'message': '' };
 
 let raycaster = new THREE.Raycaster();
 
@@ -69,9 +71,28 @@ async function hitboxClick(character,hitbox) {
     const message = extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]["message"];
 
     setExpression(character, model_expression);
-    setMotion(character, model_motion, true, true, true);
+    setMotion(character, model_motion, false, true, true);
 
     // TODO: send message
+    if (message != '') {
+        console.debug(DEBUG_PREFIX,getContext());
+        // Same interaction as last message
+        if (getContext().chat[getContext().chat.length - 1].is_user && previous_interaction['character'] == character && previous_interaction['message'] == message) {
+            console.debug(DEBUG_PREFIX,'Same as last interaction, nothing done');
+        }
+        else {
+            previous_interaction['character'] = character;
+            previous_interaction['message'] = message;
+
+            $('#send_textarea').val(''); // clear message area to avoid double message
+            sendMessageAsUser(message);
+            if (extension_settings.vrm.auto_send_hitbox_message) {
+                await getContext().generate();
+            }
+        }
+    }
+    else
+        console.debug(DEBUG_PREFIX,'Mapped message empty, nothing to send.');
 }
 
 //--------------

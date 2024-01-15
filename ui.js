@@ -32,6 +32,7 @@ export {
     onEnabledClick,
     onFollowCameraClick,
     onTtsLipsSyncClick,
+    onAutoSendHitboxMessageClick,
     onModelCacheClick,
     onAnimationCacheClick,
     onShowGridClick,
@@ -77,6 +78,11 @@ async function onFollowCameraClick() {
 
 async function onTtsLipsSyncClick() {
     extension_settings.vrm.tts_lips_sync = $('#vrm_tts_lips_sync_checkbox').is(':checked');
+    saveSettingsDebounced();
+}
+
+async function onAutoSendHitboxMessageClick() {
+    extension_settings.vrm.auto_send_hitbox_message = $('#vrm_auto_send_hitbox_message_checkbox').is(':checked');
     saveSettingsDebounced();
 }
 
@@ -233,19 +239,6 @@ async function onModelChange() {
     await setModel(character,model_path);
     await loadModelUi(use_default_settings);
     
-    // Load default expression/motion
-    const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
-    const motion =  extension_settings.vrm.model_settings[model_path]['animation_default']['motion'];
-
-    if (expression !== undefined && expression != "none") {
-        console.debug(DEBUG_PREFIX,"Set default expression to",expression);
-        setExpression(character, expression);
-    }
-    if (motion !== undefined && motion != "none") {
-        console.debug(DEBUG_PREFIX,"Set default motion to",motion);
-        setMotion(character, motion, true);
-    }
-    
     $('#vrm_model_settings').show();
     $('#vrm_model_loading').hide();
 }
@@ -302,8 +295,8 @@ async function onAnimationMappingChange(type) {
 
     saveSettingsDebounced();
 
-    setExpression(character, expression);
-    setMotion(character, motion, true);
+    await setExpression(character, expression);
+    await setMotion(character, motion, true);
 }
 
 async function loadModelUi(use_default_settings) {
@@ -507,8 +500,8 @@ async function updateHitboxMapping(hitbox) {
     extension_settings.vrm.model_settings[model]['hitboxes_mapping'][hitbox] = { 'expression': model_expression, 'motion': model_motion, 'message': message };
     saveSettingsDebounced();
 
-    setExpression(character, model_expression);
-    setMotion(character, model_motion, true, true, true);
+    await setExpression(character, model_expression);
+    await setMotion(character, model_motion, true, true, true);
     console.debug(DEBUG_PREFIX, 'Updated hitbox mapping:', hitbox, extension_settings.vrm.model_settings[model]['hitboxes_mapping'][hitbox]);
 }
 
@@ -521,9 +514,9 @@ async function updateExpressionMapping(expression) {
     extension_settings.vrm.model_settings[model]['classify_mapping'][expression] = { 'expression': model_expression, 'motion': model_motion };
     saveSettingsDebounced();
 
-    setExpression(character, model_expression);
+    await setExpression(character, model_expression);
 
-    setMotion(character, model_motion, true, true, true);
+    await setMotion(character, model_motion, true, true, true);
     console.debug(DEBUG_PREFIX, 'Updated expression mapping:', expression, extension_settings.vrm.model_settings[model]['classify_mapping'][expression]);
 }
 

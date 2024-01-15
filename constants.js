@@ -117,6 +117,10 @@ const DEFAULT_EXPRESSION_MAPPING = {
     "chest": "angry",
     "groin": "angry",
     "butt": "angry",
+    "leftHand": "happy",
+    "rightHand": "happy",
+    "leftLeg": "surprised",
+    "rightLeg": "surprised",
     "rightFoot": "surprised",
     "leftFoot": "surprised"
 }
@@ -156,12 +160,16 @@ const DEFAULT_MOTION_MAPPING = {
     "surprise": "assets/vrm/animation/surprise",
 
     // Hitboxes
-    "head": "assets/vrm/animation/hitbox_head",
-    "chest": "assets/vrm/animation/hitbox_chest",
-    "groin": "assets/vrm/animation/hitbox_chest",
-    "butt": "assets/vrm/animation/hitbox_groin",
-    "rightFoot": "assets/vrm/animation/hitbox_rightFoot",
-    "leftFoot": "assets/vrm/animation/hitbox_leftFoot"
+    "head": "assets/vrm/animation/gratitude",
+    "chest": "assets/vrm/animation/onhit_cover_boobs",
+    "groin": "assets/vrm/animation/onhit_cover_crotch",
+    "butt": "assets/vrm/animation/onhit_cover_butt",
+    "leftHand": "assets/vrm/animation/onhit_hands",
+    "rightHand": "assets/vrm/animation/onhit_hands",
+    "leftLeg": "assets/vrm/animation/onhit_legs",
+    "rightLeg": "assets/vrm/animation/onhit_legs",
+    "rightFoot": "assets/vrm/animation/kicking_out",
+    "leftFoot": "assets/vrm/animation/kicking_out"
 }
 
 const HITBOXES = {
@@ -193,6 +201,34 @@ const HITBOXES = {
         },
         "color": 0x6666ff
     },
+    "leftHand": {
+        "bone": "leftHand",
+        "size": {
+            "x":0.07,
+            "y":0.07,
+            "z":0.07,
+        },
+        "offset": {
+            "x":0.05,
+            "y":-0.05,
+            "z":0.0,
+        },
+        "color": 0x6666ff
+    },
+    "rightHand": {
+        "bone": "rightHand",
+        "size": {
+            "x":0.07,
+            "y":0.07,
+            "z":0.07,
+        },
+        "offset": {
+            "x":-0.05,
+            "y":-0.05,
+            "z":0.0,
+        },
+        "color": 0x6666ff
+    },
     "groin": {
         "bone": "hips",
         "size": {
@@ -221,8 +257,36 @@ const HITBOXES = {
         },
         "color": 0xff00ff
     },
-    "rightFoot": {
-        "bone": "rightFoot",
+    "leftLeg": {
+        "bone": "leftLowerLeg",
+        "size": {
+            "x":0.1,
+            "y":0.2,
+            "z":0.1,
+        },
+        "offset": {
+            "x":0,
+            "y":0,
+            "z":0,
+        },
+        "color": 0x6600cc
+    },
+    "rightLeg": {
+        "bone": "rightLowerLeg",
+        "size": {
+            "x":0.1,
+            "y":0.2,
+            "z":0.1,
+        },
+        "offset": {
+            "x":0,
+            "y":0,
+            "z":0,
+        },
+        "color": 0x6600cc
+    },
+    "leftFoot": {
+        "bone": "leftFoot",
         "size": {
             "x":0.1,
             "y":0.1,
@@ -235,8 +299,8 @@ const HITBOXES = {
         },
         "color": 0x6600cc
     },
-    "leftFoot": {
-        "bone": "leftFoot",
+    "rightFoot": {
+        "bone": "rightFoot",
         "size": {
             "x":0.1,
             "y":0.1,
