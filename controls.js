@@ -96,11 +96,9 @@ async function pointerDown(event) {
     isMouseDown = true;
     if (raycaster !== undefined && currentMouse !== undefined && camera !== undefined) {
         // UI between mouse and canvas
-        /*
         const element = document.elementFromPoint(event.clientX, event.clientY);
         if (element.id != VRM_CANVAS_ID)
             return;
-        */
 
         const mouseX = (event.offsetX / renderer.domElement.clientWidth) * 2 - 1;
         const mouseY = -(event.offsetY / renderer.domElement.clientHeight) * 2 + 1;
@@ -240,11 +238,9 @@ async function wheel(event) {
         return;
 
     // UI between mouse and canvas
-    /*
     const element = document.elementFromPoint(event.clientX, event.clientY);
     if (element != null && element.id != VRM_CANVAS_ID)
         return;
-    */
 
     const mouseX = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
     const mouseY = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
