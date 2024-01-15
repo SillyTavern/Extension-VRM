@@ -14,7 +14,9 @@ export {
     ANIMATION_FADE_TIME,
     SPRITE_DIV,
     VN_MODE_DIV,
-    DEFAULT_SCALE
+    DEFAULT_SCALE,
+    HITBOXES,
+    HIT_BOX_DELAY
 }
 
 const MODULE_NAME = "VRM";
@@ -28,7 +30,8 @@ const ANIMATION_FADE_TIME = 0.3;
 const SPRITE_DIV = 'expression-wrapper';
 const VN_MODE_DIV = 'visual-novel-wrapper';
 
-const DEFAULT_SCALE = 3.0
+const DEFAULT_SCALE = 3.0;
+const HIT_BOX_DELAY = 100;
 
 const JS_LIBS = [
 "es-module-shims.js"
@@ -76,7 +79,10 @@ const CLASSIFY_EXPRESSIONS = [
 const FALLBACK_EXPRESSION = "neutral";
 
 const DEFAULT_EXPRESSION_MAPPING = {
+    // Fallback
     "default": "neutral",
+
+    // Classify class
     "admiration": "happy",
     "amusement": "happy",
     "anger": "angry",
@@ -104,11 +110,22 @@ const DEFAULT_EXPRESSION_MAPPING = {
     "remorse": "sad",
     "sadness": "sad",
     "surprise": "surprised",
-    "neutral": "neutral"
+    "neutral": "neutral",
+
+    // Hitboxes
+    "head": "happy",
+    "chest": "angry",
+    "groin": "angry",
+    "butt": "angry",
+    "rightFoot": "surprised",
+    "leftFoot": "surprised"
 }
 
 const DEFAULT_MOTION_MAPPING = {
+    // Fallback
     "default": "assets/vrm/animation/neutral",
+
+    // Classify class
     "admiration": "assets/vrm/animation/admiration",
     "amusement": "assets/vrm/animation/amusement",
     "anger": "assets/vrm/animation/anger",
@@ -136,5 +153,100 @@ const DEFAULT_MOTION_MAPPING = {
     "relief": "assets/vrm/animation/relief",
     "remorse": "assets/vrm/animation/remorse",
     "sadness": "assets/vrm/animation/sadness",
-    "surprise": "assets/vrm/animation/surprise"
+    "surprise": "assets/vrm/animation/surprise",
+
+    // Hitboxes
+    "head": "assets/vrm/animation/hitbox_head",
+    "chest": "assets/vrm/animation/hitbox_chest",
+    "groin": "assets/vrm/animation/hitbox_chest",
+    "butt": "assets/vrm/animation/hitbox_groin",
+    "rightFoot": "assets/vrm/animation/hitbox_rightFoot",
+    "leftFoot": "assets/vrm/animation/hitbox_leftFoot"
+}
+
+const HITBOXES = {
+    "head": {
+        "bone": "head",
+        "size": {
+            "x":0.1,
+            "y":0.1,
+            "z":0.1,
+        },
+        "offset": {
+            "x":0,
+            "y":0.08,
+            "z":0,
+        },
+        "color": 0x6699ff
+    },
+    "chest": {
+        "bone": "upperChest",
+        "size": {
+            "x":0.15,
+            "y":0.1,
+            "z":0.08,
+        },
+        "offset": {
+            "x":0,
+            "y":0.00,
+            "z":-0.1,
+        },
+        "color": 0x6666ff
+    },
+    "groin": {
+        "bone": "hips",
+        "size": {
+            "x":0.05,
+            "y":0.05,
+            "z":0.12,
+        },
+        "offset": {
+            "x":0,
+            "y":-0.1,
+            "z":-0.1,
+        },
+        "color": 0xff99e6
+    },
+    "butt": {
+        "bone": "hips",
+        "size": {
+            "x":0.15,
+            "y":0.1,
+            "z":0.05,
+        },
+        "offset": {
+            "x":0,
+            "y":0,
+            "z":0.1,
+        },
+        "color": 0xff00ff
+    },
+    "rightFoot": {
+        "bone": "rightFoot",
+        "size": {
+            "x":0.1,
+            "y":0.1,
+            "z":0.1,
+        },
+        "offset": {
+            "x":0,
+            "y":0,
+            "z":0,
+        },
+        "color": 0x6600cc
+    },
+    "leftFoot": {
+        "bone": "leftFoot",
+        "size": {
+            "x":0.1,
+            "y":0.1,
+            "z":0.1,
+        },
+        "offset": {
+            "x":0,
+            "y":0,
+            "z":0,
+        },
+        "color": 0x6600cc
+    }
 }

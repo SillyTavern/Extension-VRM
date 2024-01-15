@@ -14,7 +14,8 @@ import {
     FALLBACK_EXPRESSION,
     ANIMATION_FADE_TIME,
     SPRITE_DIV,
-    VN_MODE_DIV
+    VN_MODE_DIV,
+    HITBOXES
 } from "./constants.js";
 
 import {
@@ -41,7 +42,7 @@ export {
     updateExpression,
     talk,
     updateModel,
-    vrm_colliders,
+    current_avatars,
     renderer,
     camera,
     VRM_CONTAINER_NAME,
@@ -54,7 +55,6 @@ const VRM_COLLIDER_NAME = "VRM_COLLIDER"
 
 // Avatars
 let current_avatars = {} // contain loaded avatar variables
-let vrm_colliders = [] // use for raycasting
 
 // Caches
 let models_cache = {};
@@ -74,6 +74,7 @@ const lookAtTarget = new THREE.Object3D();
 const gridHelper = new THREE.GridHelper( 20, 20 );
 const axesHelper = new THREE.AxesHelper( 10 );
 
+
 // animate
 function animate() {
     requestAnimationFrame( animate );
@@ -81,8 +82,9 @@ function animate() {
         const deltaTime = clock.getDelta();
 
         for(const character in current_avatars) {
-            const vrm = current_avatars[character]["vrm"]
-            const mixer =  current_avatars[character]["animation_mixer"]
+            const vrm = current_avatars[character]["vrm"];
+            const mixer = current_avatars[character]["animation_mixer"];
+            
             // Look at camera
             if (extension_settings.vrm.follow_camera)
                 vrm.lookAt.target = lookAtTarget;
@@ -91,7 +93,41 @@ function animate() {
 
             vrm.update( deltaTime );
             mixer.update( deltaTime );
-            current_avatars[character]["colliderHelper"].visible = extension_settings.vrm.show_grid;
+
+            // Update control box
+            const objectContainer = current_avatars[character]["objectContainer"];
+            const hips = vrm.humanoid?.getNormalizedBoneNode("hips");
+            hips.getWorldPosition(current_avatars[character]["collider"].position);
+            //objectContainer.worldToLocal(current_avatars[character]["collider"].position);
+            hips.getWorldQuaternion(current_avatars[character]["collider"].quaternion);
+            current_avatars[character]["collider"].scale.copy(objectContainer.scale);
+            current_avatars[character]["collider"].visible = extension_settings.vrm.show_grid;
+
+            // Upade hitbox
+            for (const body_part in current_avatars[character]["hitboxes"]) {
+                const bone = vrm.humanoid?.getNormalizedBoneNode(HITBOXES[body_part]["bone"]);
+                if (bone !== null) {
+                    bone.getWorldPosition(current_avatars[character]["hitboxes"][body_part]["offsetContainer"].position);
+                    bone.getWorldQuaternion(current_avatars[character]["hitboxes"][body_part]["offsetContainer"].quaternion);
+                    current_avatars[character]["hitboxes"][body_part]["offsetContainer"].scale.copy(objectContainer.scale);
+                    current_avatars[character]["hitboxes"][body_part]["offsetContainer"].visible = extension_settings.vrm.show_grid;
+                    /*
+                    const position = new THREE.Vector3();
+                    const rotation = new THREE.Vector3(0,0,0);
+                    const offset = HITBOXES[body_part]["offset"];
+                    const quaternion = new THREE.Quaternion();
+                    position.setFromMatrixPosition(bone.matrixWorld);
+                    objectContainer.worldToLocal(position);
+                    bone.getWorldQuaternion(quaternion);
+                    rotation.applyQuaternion(quaternion).normalize().multiplyScalar(1);
+                    rotation.sub(bone.rotation);
+                    position.add(new THREE.Vector3(offset.x,offset.y,offset.z));
+                    current_avatars[character]["hitboxes"][body_part].position.set(position.x,position.y,position.z);
+                    current_avatars[character]["hitboxes"][body_part].rotation.set(rotation.x,rotation.y,rotation.z);
+                    current_avatars[character]["hitboxes"][body_part].visible = extension_settings.vrm.show_grid;
+                    */
+                }
+            }
         }
         // Show/hide helper grid
         gridHelper.visible = extension_settings.vrm.show_grid;
@@ -106,7 +142,7 @@ animate();
 async function loadScene() {
     clock = new THREE.Clock();
     current_avatars = {};
-    vrm_colliders = [];
+    models_cache = {};
     animations_cache = {};
     const instanceId = currentInstanceId + 1;
     currentInstanceId = instanceId;
@@ -176,7 +212,6 @@ async function loadAllModels(current_characters) {
     }
 
     if (extension_settings.vrm.enabled) {
-
         // Load new characters models
         for(const character of current_characters) {
             const model_path = extension_settings.vrm.character_model_mapping[character];
@@ -206,7 +241,6 @@ async function setModel(character,model_path) {
     current_avatars[character] = model;
     current_avatars[character]["objectContainer"].name = VRM_CONTAINER_NAME+"_"+character;
     current_avatars[character]["collider"].name = VRM_COLLIDER_NAME+"_"+character;
-    vrm_colliders.push(current_avatars[character]["collider"]);
 
     // Load default expression/motion
     const expression = extension_settings.vrm.model_settings[model_path]['animation_default']['expression'];
@@ -224,8 +258,10 @@ async function setModel(character,model_path) {
     blink(character, currentInstanceId);
     textTalk(character, currentInstanceId);
     current_avatars[character]["objectContainer"].visible = true;
+    current_avatars[character]["collider"].visible = extension_settings.vrm.show_grid;
     
     scene.add(current_avatars[character]["objectContainer"]);
+    scene.add(current_avatars[character]["collider"]);
 }
 
 async function unloadModel(character) {
@@ -233,19 +269,22 @@ async function unloadModel(character) {
     if (current_avatars[character] !== undefined) {
         console.debug(DEBUG_PREFIX,"Unloading avatar of",character);
         const container = current_avatars[character]["objectContainer"];
+        const collider = current_avatars[character]["collider"];
+
         scene.remove(scene.getObjectByName(container.name));
-        // Delete collider
-        for(const i in vrm_colliders)
-            if (vrm_colliders[i].name == current_avatars[character]["collider"].name) {
-                //console.debug(DEBUG_PREFIX,"DELETE COLLIDER",vrm_colliders[i])
-                vrm_colliders.splice(i, 1);
-                //console.debug(DEBUG_PREFIX,vrm_colliders)
-                break;
-            }
+        scene.remove(scene.getObjectByName(collider.name));
+        for(const hitbox in current_avatars[character]["hitboxes"]) {
+            console.debug(DEBUG_PREFIX,"REMOVING",current_avatars[character]["hitboxes"][hitbox]["offsetContainer"])
+            scene.remove(scene.getObjectByName(current_avatars[character]["hitboxes"][hitbox]["offsetContainer"].name));
+        }
         delete current_avatars[character];
+
         container.visible = false;
-        if (!extension_settings.vrm.models_cache)
+        collider.visible = false;
+        if (!extension_settings.vrm.models_cache) {
             await container.traverse(obj => obj.dispose?.());
+            await collider.traverse(obj => obj.dispose?.());
+        }
     }
 }
 
@@ -308,7 +347,7 @@ async function loadModel(model_path) { // Only cache the model if character=null
 
     // Add vrm to scene
     VRMUtils.rotateVRM0(vrm); // rotate if the VRM is VRM0.0
-    const scale = extension_settings.vrm.model_settings[model_path]["scale"]
+    const scale = extension_settings.vrm.model_settings[model_path]["scale"];
     // Create a group to set model center as rotation/scaling origin
     const object_container = new THREE.Group(); // First container to scale/position center model
     object_container.visible = false;
@@ -323,9 +362,7 @@ async function loadModel(model_path) { // Only cache the model if character=null
     object_container.parent = scene;
     
     // Collider used to detect mouse click
-    const boundingBox = new THREE.Box3();
-    boundingBox.setFromObject(vrm.scene);
-    boundingBox.set(new THREE.Vector3(boundingBox.min.x/2,boundingBox.min.y,-0.25), new THREE.Vector3(boundingBox.max.x/2,boundingBox.max.y,0.25))
+    const boundingBox = new THREE.Box3(new THREE.Vector3(-0.5,-1.0,-0.5), new THREE.Vector3(0.5,1.0,0.5));
     const dimensions = new THREE.Vector3().subVectors( boundingBox.max, boundingBox.min );
     // make a BoxGeometry of the same size as Box3
     const boxGeo = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
@@ -333,31 +370,85 @@ async function loadModel(model_path) { // Only cache the model if character=null
     const matrix = new THREE.Matrix4().setPosition(dimensions.addVectors(boundingBox.min, boundingBox.max).multiplyScalar( 0.5 ));
     boxGeo.applyMatrix4(matrix);
     // make a mesh
-    const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial( { visible: false } ));
+    const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+        visible: true,
+        side: THREE.BackSide,
+        wireframe: true,
+        color:0xffff00
+    }));
     collider.name = VRM_COLLIDER_NAME;
     collider.material.side = THREE.BackSide;
-    verticalOffset.add(collider);
-    // Make a debug visual helper
-    const colliderHelper = new THREE.Box3Helper( boundingBox, 0xffff00 );
-    collider.add(colliderHelper);
-    colliderHelper.visible = extension_settings.vrm.show_grid;
+    scene.add(collider);
     
     // Avatar dynamic settings
     const model = {
         "model_path": model_path,
-        "vrm":vrm, // the actual vrm object
-        "hipsHeight":hipsHeight, // its original hips height, used for scaling loaded animation
-        "objectContainer":object_container, // the actual 3d group containing the vrm scene, handle centered position/rotation/scaling
-        "collider":collider,
-        "colliderHelper":colliderHelper,
+        "vrm": vrm, // the actual vrm object
+        "hipsHeight": hipsHeight, // its original hips height, used for scaling loaded animation
+        "objectContainer": object_container, // the actual 3d group containing the vrm scene, handle centered position/rotation/scaling
+        "collider": collider,
         "expression": "none",
         "animation_mixer": new THREE.AnimationMixer(vrm.scene),
         "motion": {
             "name": "none",
             "animation": null
         },
-        "talkEnd": 0
+        "talkEnd": 0,
+        "hitboxes": {}
     };
+
+    // Hit boxes
+    for(const body_part in HITBOXES)
+    {
+        const bone = vrm.humanoid.getNormalizedBoneNode(HITBOXES[body_part]["bone"])
+        if (bone !== null) {
+            const position = new THREE.Vector3();
+            position.setFromMatrixPosition(bone.matrixWorld);
+            console.debug(DEBUG_PREFIX,"Creating hitbox for",body_part,"at",position);
+
+            const size = HITBOXES[body_part]["size"];
+            const offset = HITBOXES[body_part]["offset"];
+
+            // Collider used to detect mouse click
+            const boundingBox = new THREE.Box3(new THREE.Vector3(-size.x,-size.y,-size.z), new THREE.Vector3(size.x,size.y,size.z));
+            const dimensions = new THREE.Vector3().subVectors( boundingBox.max, boundingBox.min );
+            // make a BoxGeometry of the same size as Box3
+            const boxGeo = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
+            // move new mesh center so it's aligned with the original object
+            const matrix = new THREE.Matrix4().setPosition(dimensions.addVectors(boundingBox.min, boundingBox.max).multiplyScalar( 0.5 ));
+            boxGeo.applyMatrix4(matrix);
+            // make a mesh
+            const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+                visible: true,
+                side: THREE.BackSide,
+                wireframe: true,
+                color:HITBOXES[body_part]["color"]
+            }));
+            collider.name = body_part;
+            if (vrm.meta?.metaVersion === '1')
+                collider.position.set(offset.x/hipsHeight,offset.y/hipsHeight,-offset.z/hipsHeight);
+            else
+                collider.position.set(offset.x/hipsHeight,offset.y/hipsHeight,offset.z/hipsHeight);
+            // Create a offset container
+            const offset_container = new THREE.Group(); // First container to scale/position center model
+            offset_container.name = model_path+"_offsetContainer_hitbox_"+body_part;
+            offset_container.visible = true;
+            offset_container.add(collider);
+            scene.add(offset_container)
+
+            //object_container.localToWorld(position);
+            //position.add(new THREE.Vector3(offset.x,offset.y,offset.z));
+            //collider.position.set(position.x,position.y,position.z);
+            //scene.add(collider);
+
+            model["hitboxes"][body_part] = {
+                "offsetContainer":offset_container,
+                "collider":collider
+            }
+        }
+    }
+
+    console.debug(DEBUG_PREFIX,vrm);
 
     // Cache model
     if (extension_settings.vrm.models_cache)
@@ -428,7 +519,7 @@ async function setExpression(character, value) {
     for(const expression in vrm.expressionManager.expressionMap)
         vrm.expressionManager.setValue(expression, 0.0);
 
-    vrm.expressionManager.setValue(value, 0.25);
+    vrm.expressionManager.setValue(value, 1.0);
     current_avatars[character]["expression"] = value;
 }
 
@@ -606,7 +697,6 @@ function blink(character, instanceId) {
     if (current_avatars[character] !== undefined) {
         //console.debug(DEBUG_PREFIX,"DEBUG",current_avatars[character]["vrm"].expressionManager.getExpression(current_avatars[character]["expression"]));
         current_avatars[character]["vrm"].expressionManager.setValue("blink",1.0-current_blink);
-        current_avatars[character]["vrm"].expressionManager.setValue(current_avatars[character]["expression"],1);
     }
 
     var rand = Math.round(Math.random() * 10000) + 1000;
@@ -811,6 +901,7 @@ async function audioTalk(response, character) {
         //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
     }
     audio.onplay = startTalk;
+    // TODO: restaure expression weight ?
 }
 
 window['vrmLipSync'] = audioTalk;

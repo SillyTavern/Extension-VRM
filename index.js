@@ -36,15 +36,18 @@ DONE:
 - vrm cache
     - optional
     - keep vrm model previously loaded for instant switch between models
+    - no duplicate model possible if on
+- Control box follow animation
+- Hit box ui / click detection
 
 TODO:
     v1.0:
+        - Hit box ui and fire expression/animation/text auto-send option
         - Light control
         - Hit boxes
     v2.0:
         - blink smooth and adapt to current expression?
             - The expression define the blink blend can't do much for now
-        - Optional animation cache ?
         - click interaction
         - other kind of camera
         - 3D room

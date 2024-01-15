@@ -4,7 +4,8 @@ import { getContext, extension_settings, renderExtensionTemplate } from '../../.
 import {
     DEBUG_PREFIX,
     VRM_MODEL_FOLDER,
-    CLASSIFY_EXPRESSIONS
+    CLASSIFY_EXPRESSIONS,
+    HITBOXES
 } from './constants.js';
 
 import {
@@ -62,6 +63,8 @@ let animations_groups = [];
 
 async function onEnabledClick() {
     extension_settings.vrm.enabled = $('#vrm_enabled_checkbox').is(':checked');
+    $('#vrm_character_select').val("none");
+    $('#vrm_model_select').val("none");
     saveSettingsDebounced();
 
     await loadScene();
@@ -179,6 +182,9 @@ async function onModelResetClick() {
 }
 
 async function onModelChange() {
+    if (!extension_settings.vrm.enabled)
+        return;
+
     const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
     let use_default_settings = false;
@@ -209,11 +215,15 @@ async function onModelChange() {
             'animation_default': { 'expression': 'none', 'motion': 'none' },
             //'animation_click': { 'expression': 'none', 'motion': 'none', 'message': '' },
             'classify_mapping': {},
-            'hit_box_mapping': {}
+            'hitboxes_mapping': {}
         };
 
         for (const expression of CLASSIFY_EXPRESSIONS) {
             extension_settings.vrm.model_settings[model_path]['classify_mapping'][expression] = { 'expression': 'none', 'motion': 'none' };
+        }
+
+        for (const area in HITBOXES) {
+            extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][area] = { 'expression': 'none', 'motion': 'none', 'message': '' };
         }
 
         saveSettingsDebounced();
@@ -300,8 +310,10 @@ async function loadModelUi(use_default_settings) {
     const character = String($('#vrm_character_select').val());
     const model_path = String($('#vrm_model_select').val());
     const expression_ui = $('#vrm_expression_mapping');
+    const hiboxes_ui = $('#vrm_hitboxes_mapping');
 
     expression_ui.empty();
+    hiboxes_ui.empty();
 
     if (model_path == "none")
         return;
@@ -343,7 +355,69 @@ async function loadModelUi(use_default_settings) {
     $('#vrm_model_rotation_y').val(extension_settings.vrm.model_settings[model_path]['ry']);
     $('#vrm_model_rotation_y_value').text(extension_settings.vrm.model_settings[model_path]['ry']);
 
-	// TODO: MouthAnimations
+	// Hitboxes
+    // Hit areas mapping
+    for (const hitbox in HITBOXES) {
+        hiboxes_ui.append(`
+        <div class="vrm-parameter">
+            <div class="vrm-parameter-title">
+                <label for="vrm_hitbox_${hitbox}">
+                ${hitbox}
+                </label>
+            </div>
+            <div>
+                <div class="vrm-select-div">
+                    <select id="vrm_hitbox_expression_select_${hitbox}">
+                    </select>
+                    <div id="vrm_hitbox_expression_replay_${hitbox}" class="vrm_replay_button menu_button">
+                        <i class="fa-solid fa-arrow-rotate-left"></i>
+                    </div>
+                </div>
+                <div class="vrm-select-div">
+                    <select id="vrm_hitbox_motion_select_${hitbox}">
+                    </select>
+                    <div id="vrm_hitbox_motion_replay_${hitbox}" class="vrm_replay_button menu_button">
+                        <i class="fa-solid fa-arrow-rotate-left"></i>
+                    </div>
+                </div>
+                <textarea id="vrm_hitbox_message_${hitbox}" type="text" class="text_pole textarea_compact" rows="2"
+            placeholder="Write message te send when clicking the area."></textarea>
+            </div>
+        </div>
+        `);
+
+        loadAnimationUi(
+            hitbox,
+            use_default_settings,
+            model_expressions,
+            model_motions,
+            `vrm_hitbox_expression_select_${hitbox}`,
+            `vrm_hitbox_motion_select_${hitbox}`,
+            extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['expression'],
+            extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['motion']);
+
+        $(`#vrm_hitbox_message_${hitbox}`).val(extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['message']);
+
+        $(`#vrm_hitbox_expression_select_${hitbox}`).on('change', function () { updateHitboxMapping(hitbox); });
+        $(`#vrm_hitbox_motion_select_${hitbox}`).on('change', function () { updateHitboxMapping(hitbox); });
+        $(`#vrm_hitbox_message_${hitbox}`).on('change', function () { updateHitboxMapping(hitbox); });
+        $(`#vrm_hitbox_expression_replay_${hitbox}`).on('click', function () { updateHitboxMapping(hitbox); });
+        $(`#vrm_hitbox_motion_replay_${hitbox}`).on('click', function () { updateHitboxMapping(hitbox); });
+
+        
+        // Default loaded
+        if (extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['expression'] != $(`#vrm_hitbox_expression_select_${hitbox}`).val()) {
+            extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['expression'] = $(`#vrm_hitbox_expression_select_${hitbox}`).val();
+            console.debug(DEBUG_PREFIX,"AAAAAAAAAAAAA",$(`vrm_hitbox_expression_select_${hitbox}`).val())
+            saveSettingsDebounced();
+        }
+        
+        if (extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['motion'] != $(`#vrm_hitbox_motion_select_${hitbox}`).val()) {
+            extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['motion'] = $(`#vrm_hitbox_motion_select_${hitbox}`).val();
+            saveSettingsDebounced();
+        }
+    }
+
 
     // Default expression/motion
     loadAnimationUi(
@@ -421,6 +495,21 @@ async function loadModelUi(use_default_settings) {
             saveSettingsDebounced();
         }
     }
+}
+
+async function updateHitboxMapping(hitbox) {
+    const character = String($('#vrm_character_select').val());
+    const model = String($('#vrm_model_select').val());
+    const model_expression = $(`#vrm_hitbox_expression_select_${hitbox}`).val();
+    const model_motion = $(`#vrm_hitbox_motion_select_${hitbox}`).val();
+    const message = $(`#vrm_hitbox_message_${hitbox}`).val();
+
+    extension_settings.vrm.model_settings[model]['hitboxes_mapping'][hitbox] = { 'expression': model_expression, 'motion': model_motion, 'message': message };
+    saveSettingsDebounced();
+
+    setExpression(character, model_expression);
+    setMotion(character, model_motion, true, true, true);
+    console.debug(DEBUG_PREFIX, 'Updated hitbox mapping:', hitbox, extension_settings.vrm.model_settings[model]['hitboxes_mapping'][hitbox]);
 }
 
 async function updateExpressionMapping(expression) {
