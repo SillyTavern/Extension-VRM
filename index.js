@@ -42,7 +42,10 @@ DONE:
 
 TODO:
     v1.0:
+        - option interact through ui
         - Hit box ui and fire expression/animation/text auto-send option
+            - set default
+            - hands / knees
         - Light control
         - Hit boxes
     v2.0:
