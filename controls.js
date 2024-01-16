@@ -87,8 +87,9 @@ async function hitboxClick(character,hitbox) {
             previous_interaction['character'] = character;
             previous_interaction['message'] = message;
 
-            $('#send_textarea').val(''); // clear message area to avoid double message
-            sendMessageAsUser(message);
+            //$('#send_textarea').val(''); // clear message area to avoid double message
+            //sendMessageAsUser(message);
+            $('#send_textarea').val(message);
             if (extension_settings.vrm.auto_send_hitbox_message) {
                 await getContext().generate();
             }
