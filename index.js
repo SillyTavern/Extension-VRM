@@ -39,11 +39,11 @@ DONE:
     - no duplicate model possible if on
 - Control box follow animation
 - Hit box ui / click detection / message sent
+- Light control
 
 TODO:
     v1.0:
         - check normalization of audio for lip sync
-        - Light control
     v2.0:
         - blink smooth and adapt to current expression?
             - The expression define the blink blend can't do much for now
@@ -58,7 +58,13 @@ import { eventSource, event_types, getCharacters, saveSettings, saveSettingsDebo
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
 import { registerSlashCommand } from '../../../slash-commands.js';
 export { MODULE_NAME };
-import { MODULE_NAME, DEBUG_PREFIX, VRM_CANVAS_ID } from "./constants.js";
+import { 
+    MODULE_NAME,
+    DEBUG_PREFIX,
+    VRM_CANVAS_ID,
+    DEFAULT_LIGHT_COLOR,
+    DEFAULT_LIGHT_INTENSITY
+} from "./constants.js";
 import {
     loadScene,
     loadAllModels,
@@ -66,7 +72,8 @@ import {
     setMotion,
     updateExpression,
     talk,
-    setModel
+    setModel,
+    setLight
 } from "./vrm.js";
 import {
     onEnabledClick,
@@ -75,6 +82,9 @@ import {
     onAutoSendHitboxMessageClick,
     onModelCacheClick,
     onAnimationCacheClick,
+    onLightChange,
+    onLightColorResetClick,
+    onLightIntensityResetClick,
     onShowGridClick,
     onCharacterChange,
     onCharacterRefreshClick,
@@ -114,6 +124,10 @@ const defaultSettings = {
     models_cache: false,
     animations_cache: false,
 
+    // Scene
+    light_color: DEFAULT_LIGHT_COLOR,
+    light_intensity: DEFAULT_LIGHT_INTENSITY,
+
     // Debug
     show_grid: false,
 
@@ -149,6 +163,14 @@ function loadSettings() {
     $('#vrm_animations_cache_checkbox').prop('checked', extension_settings.vrm.animations_cache);
     $('#vrm_show_grid_checkbox').prop('checked', extension_settings.vrm.show_grid);
 
+    $('#vrm_light_color').val(extension_settings.vrm.light_color);
+    $('#vrm_light_intensity').val(extension_settings.vrm.light_intensity);
+    $('#vrm_light_intensity_value').text(extension_settings.vrm.light_intensity);
+    
+    $('#vrm_light_color').on('input', onLightChange);
+    $('#vrm_light_intensity').on('input', onLightChange);
+    $('#vrm_light_color_reset_button').on('click', onLightColorResetClick);
+    $('#vrm_light_intensity_reset_button').on('click', onLightIntensityResetClick);
     $('#vrm_character_select').on('change', onCharacterChange);
     $('#vrm_character_refresh_button').on('click', onCharacterRefreshClick);
     $('#vrm_character_remove_button').on('click', onCharacterRemoveClick);
@@ -156,7 +178,7 @@ function loadSettings() {
     $('#vrm_model_refresh_button').on('click', onModelRefreshClick);
     $('#vrm_model_select').on('change', onModelChange);
     $('#vrm_model_reset_button').on('click', onModelResetClick);
-
+    
     $('#vrm_model_scale').on('input', onModelScaleChange);
     $('#vrm_model_position_x').on('input', onModelPositionChange);
     $('#vrm_model_position_y').on('input', onModelPositionChange);
@@ -240,10 +262,30 @@ jQuery(async () => {
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
     moduleWorker();
     */
+    registerSlashCommand('vrmlightcolor', setLightColorSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm scene light color (example: "/vrmlightcolor white" or "/vrmlightcolor purple")', true, true);
+    registerSlashCommand('vrmlightintensity', setLightIntensitySlashCommand, [], '<span class="monospace">(expression)</span> – set vrm scene light intensity in percent (example: "/vrmlightintensity 0" or "/vrmlightintensity 100")', true, true);
     registerSlashCommand('vrmmodel', setModelSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model (example: "/vrmmodel Seraphina.vrm" or "/vrmmodel character=Seraphina model=Seraphina.vrm")', true, true);
     registerSlashCommand('vrmexpression', setExpressionSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model expression (example: "/vrmexpression happy" or "/vrmexpression character=Seraphina expression=happy")', true, true);
     registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: "/vrmmotion idle" or "/vrmmotion character=Seraphina motion=idle loop=true random=false")', true, true);
 });
+
+async function setLightColorSlashCommand(_, color) {
+    if (!color) {
+        console.log('No color provided');
+        return;
+    }
+
+    setLight(color,extension_settings.vrm.light_intensity);
+}
+
+async function setLightIntensitySlashCommand(_, intensity) {
+    if (!intensity) {
+        console.log('No intensity provided');
+        return;
+    }
+
+    setLight(extension_settings.vrm.light_color,intensity);
+}
 
 // Example /vrmmotion anger
 async function setModelSlashCommand(args, model) {

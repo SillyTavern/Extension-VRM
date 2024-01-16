@@ -32,6 +32,30 @@
     padding: 0.35em;
 }
 
+.vrm-color-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin: 1em;
+}
+
+.vrm-color-div input {
+    margin-right: 1em;
+}
+
+.vrm-slider-reset-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin: 1em;
+}
+
+.vrm-slider-reset-div input {
+    margin: 1em;
+}
+
 .vrm-character-select-div {
     display: flex;
     flex-direction: row;

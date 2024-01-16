@@ -16,7 +16,9 @@ export {
     VN_MODE_DIV,
     DEFAULT_SCALE,
     HITBOXES,
-    HIT_BOX_DELAY
+    HIT_BOX_DELAY,
+    DEFAULT_LIGHT_COLOR,
+    DEFAULT_LIGHT_INTENSITY
 }
 
 const MODULE_NAME = "VRM";
@@ -32,6 +34,8 @@ const VN_MODE_DIV = 'visual-novel-wrapper';
 
 const DEFAULT_SCALE = 3.0;
 const HIT_BOX_DELAY = 100;
+const DEFAULT_LIGHT_COLOR = "#FFFFFF";
+const DEFAULT_LIGHT_INTENSITY = 50;
 
 const JS_LIBS = [
 "es-module-shims.js"

@@ -47,7 +47,8 @@ export {
     camera,
     VRM_CONTAINER_NAME,
     clearModelCache,
-    clearAnimationCache
+    clearAnimationCache,
+    setLight
 }
 
 const VRM_CONTAINER_NAME = "VRM_CONTAINER";
@@ -178,8 +179,9 @@ async function loadScene() {
     axesHelper.visible = extension_settings.vrm.show_grid;
 
     // light
-    light = new THREE.DirectionalLight( 0xffffff );
+    light = new THREE.DirectionalLight();
     light.position.set( 1.0, 1.0, 1.0 ).normalize();
+    setLight(extension_settings.vrm.light_color, extension_settings.vrm.light_intensity);
     scene.add( light );
 
     // lookat target
@@ -448,7 +450,7 @@ async function loadModel(model_path) { // Only cache the model if character=null
         }
     }
 
-    console.debug(DEBUG_PREFIX,vrm);
+    //console.debug(DEBUG_PREFIX,vrm);
 
     // Cache model
     if (extension_settings.vrm.models_cache)
@@ -539,13 +541,13 @@ async function loadAnimation(vrm, hipsHeight, motion_file_path) {
             clip = await loadBVHAnimation(motion_file_path, vrm, hipsHeight);
         }
         else {
-            console.debug(DEBUG_PREFIX,"UNSUPORTED animation file");
+            //console.debug(DEBUG_PREFIX,"UNSUPORTED animation file");
             toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             return;
         }
     }
     catch(error) {
-        console.debug(DEBUG_PREFIX,"Something went wrong when loading animation file:",motion_file_path);
+        //console.debug(DEBUG_PREFIX,"Something went wrong when loading animation file:",motion_file_path);
         toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         return;
     }
@@ -831,13 +833,19 @@ async function audioTalk(response, character) {
         return response;
 
     console.debug(DEBUG_PREFIX,"Received lipsync",response, character);
+    let responseCopy;
+    try {
+        responseCopy = response.clone();
+    } catch(error) {
+        console.debug(DEBUG_PREFIX,"Wrong response format received abort lip sync");
+        return response;
+    }
 
     const audioContext = new(window.AudioContext || window.webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
     analyser.smoothingTimeConstant = 0.5;
     analyser.fftSize = 1024;
 
-    const responseCopy = response.clone();
     const blob = await responseCopy.blob();
     const arrayBuffer = await blob.arrayBuffer();
 
@@ -913,3 +921,11 @@ async function audioTalk(response, character) {
 }
 
 window['vrmLipSync'] = audioTalk;
+
+// color: any valid color format
+// intensity: percent 0-100
+function setLight(color,intensity) {
+
+    light.color = new THREE.Color(color);
+    light.intensity = intensity/100;
+}

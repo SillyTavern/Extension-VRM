@@ -5,7 +5,9 @@ import {
     DEBUG_PREFIX,
     VRM_MODEL_FOLDER,
     CLASSIFY_EXPRESSIONS,
-    HITBOXES
+    HITBOXES,
+    DEFAULT_LIGHT_COLOR,
+    DEFAULT_LIGHT_INTENSITY
 } from './constants.js';
 
 import {
@@ -18,7 +20,8 @@ import {
     updateModel,
     clearModelCache,
     clearAnimationCache,
-    loadAllModels
+    loadAllModels,
+    setLight
 } from "./vrm.js";
 
 import {
@@ -35,6 +38,9 @@ export {
     onAutoSendHitboxMessageClick,
     onModelCacheClick,
     onAnimationCacheClick,
+    onLightChange,
+    onLightColorResetClick,
+    onLightIntensityResetClick,
     onShowGridClick,
     onCharacterChange,
     onCharacterRefreshClick,
@@ -102,6 +108,25 @@ async function onAnimationCacheClick() {
         clearAnimationCache();
     else
         loadAllModels(currentChatMembers());
+}
+
+async function onLightChange() {
+    extension_settings.vrm.light_color = $('#vrm_light_color').val();
+    extension_settings.vrm.light_intensity = Number($('#vrm_light_intensity').val());
+    $('#vrm_light_intensity_value').text(extension_settings.vrm.light_intensity);
+    saveSettingsDebounced();
+
+    setLight(extension_settings.vrm.light_color, extension_settings.vrm.light_intensity);
+}
+
+async function onLightColorResetClick() {
+    $("#vrm_light_color").val(DEFAULT_LIGHT_COLOR);
+    onLightChange();
+}
+
+async function onLightIntensityResetClick() {
+    $("#vrm_light_intensity").val(DEFAULT_LIGHT_INTENSITY);
+    onLightChange();
 }
 
 async function onShowGridClick() {

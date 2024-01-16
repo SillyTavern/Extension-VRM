@@ -38,6 +38,47 @@
                         <small>Use animation cache</small>
                     </label>
                     <div>
+                        <h4>Scene Settings</h4>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_light_intensity">
+                                Light color
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <div class="vrm-color-div">
+                                <input type="color" id="vrm_light_color" value="#ffffff" />
+                                <div id="vrm_light_color_reset_button" class="menu_button">
+                                    <i class="fa-solid fa-recycle" title="Restore default settings"></i>
+                                    <!-- Refresh -->
+                                </div>
+                            </div>
+                            <small>
+                                Neutral value is white.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="vrm-parameter">
+                        <div class="vrm-parameter-title">
+                            <label for="vrm_light_intensity">
+                                Light intensity <br/>(<span id="vrm_light_intensity_value"></span>%)
+                            </label>
+                        </div>
+                        <div class="vrm-slider-div">
+                            <div class="vrm-slider-reset-div">
+                                <input id="vrm_light_intensity" type="range" min="0" max="200" step="1" value="50" />
+                                <div id="vrm_light_intensity_reset_button" class="menu_button">
+                                    <i class="fa-solid fa-recycle" title="Restore default settings"></i>
+                                    <!-- Refresh -->
+                                </div>
+                            </div>
+                            <small>
+                                Neutral value is 50%.
+                            </small>
+                        </div>
+                    </div>
+                    <div>
                         <h4>Debug Settings</h4>
                     </div>
                     <label class="checkbox_label" for="vrm_show_grid_checkbox">
