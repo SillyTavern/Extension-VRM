@@ -164,16 +164,16 @@ const DEFAULT_MOTION_MAPPING = {
     "surprise": "assets/vrm/animation/surprise",
 
     // Hitboxes
-    "head": "assets/vrm/animation/gratitude",
-    "chest": "assets/vrm/animation/onhit_cover_boobs",
-    "groin": "assets/vrm/animation/onhit_cover_crotch",
-    "butt": "assets/vrm/animation/onhit_cover_butt",
-    "leftHand": "assets/vrm/animation/onhit_hands",
-    "rightHand": "assets/vrm/animation/onhit_hands",
-    "leftLeg": "assets/vrm/animation/onhit_legs",
-    "rightLeg": "assets/vrm/animation/onhit_legs",
-    "rightFoot": "assets/vrm/animation/kicking_out",
-    "leftFoot": "assets/vrm/animation/kicking_out"
+    "head": "assets/vrm/animation/hitarea_head",
+    "chest": "assets/vrm/animation/hitarea_chest",
+    "groin": "assets/vrm/animation/hitarea_groin",
+    "butt": "assets/vrm/animation/hitarea_butt",
+    "leftHand": "assets/vrm/animation/hitarea_hands",
+    "rightHand": "assets/vrm/animation/hitarea_hands",
+    "leftLeg": "assets/vrm/animation/hitarea_leg",
+    "rightLeg": "assets/vrm/animation/hitarea_leg",
+    "rightFoot": "assets/vrm/animation/hitarea_foot",
+    "leftFoot": "assets/vrm/animation/hitarea_foot"
 }
 
 const HITBOXES = {

@@ -70,8 +70,11 @@ async function hitboxClick(character,hitbox) {
     const model_motion = extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]["motion"];
     const message = extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]["message"];
 
-    setExpression(character, model_expression);
-    setMotion(character, model_motion, false, true, true);
+    if (model_expression != "none")
+        setExpression(character, model_expression);
+
+    if (model_motion != "none")
+        setMotion(character, model_motion, false, true, true);
 
     // TODO: send message
     if (message != '') {

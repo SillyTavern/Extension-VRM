@@ -106,7 +106,7 @@ function animate() {
             current_avatars[character]["collider"].scale.copy(objectContainer.scale);
             current_avatars[character]["collider"].visible = extension_settings.vrm.show_grid;
 
-            // Upade hitbox
+            // Update hitbox
             for (const body_part in current_avatars[character]["hitboxes"]) {
                 const bone = vrm.humanoid?.getNormalizedBoneNode(HITBOXES[body_part]["bone"]);
                 if (bone !== null) {
@@ -226,6 +226,12 @@ async function setModel(character,model_path) {
 
     await unloadModel(character);
 
+    // Error occured
+    if (model === null) {
+        extension_settings.vrm.character_model_mapping[character] = undefined;
+        return;
+    }
+
     // Set as character model and start animations
     modelId++;
     current_avatars[character] = model;
@@ -299,24 +305,32 @@ async function loadModel(model_path) { // Only cache the model if character=null
         return new VRMLoaderPlugin( parser );
     } );
 
-    const gltf = await loader.loadAsync(model_path,
-        // called after loaded
-        () => {
-            console.debug(DEBUG_PREFIX,"Finished loading",model_path);
-        },
-        // called while loading is progressing
-        ( progress ) => {
-            const percent = Math.round(100.0 * ( progress.loaded / progress.total ));
-            console.debug(DEBUG_PREFIX, 'Loading model...', percent, '%');
-            $("#vrm_model_loading_percent").text(percent);
-        },
-        // called when loading has errors
-        ( error ) => {
-            console.debug(DEBUG_PREFIX,"Error when loading",model_path,":",error)
-            toastr.error('Wrong avatar file:'+model_path, DEBUG_PREFIX + ' cannot load', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-            return;
-        }
-    );
+    let gltf;
+    try {
+        gltf = await loader.loadAsync(model_path,
+            // called after loaded
+            () => {
+                console.debug(DEBUG_PREFIX,"Finished loading",model_path);
+            },
+            // called while loading is progressing
+            ( progress ) => {
+                const percent = Math.round(100.0 * ( progress.loaded / progress.total ));
+                console.debug(DEBUG_PREFIX, 'Loading model...', percent, '%');
+                $("#vrm_model_loading_percent").text(percent);
+            },
+            // called when loading has errors
+            ( error ) => {
+                console.debug(DEBUG_PREFIX,"Error when loading",model_path,":",error)
+                toastr.error('Wrong avatar file:'+model_path, DEBUG_PREFIX + ' cannot load', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                return;
+            }
+        );
+    }
+    catch (error) {
+        console.debug(DEBUG_PREFIX,"Error when loading",model_path,":",error)
+        toastr.error('Wrong avatar file:'+model_path, DEBUG_PREFIX + ' cannot load', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        return null;
+    }
 
     const vrm = gltf.userData.vrm;
     const vrmHipsY = vrm.humanoid?.getNormalizedBoneNode( 'hips' ).position.y;
@@ -401,52 +415,54 @@ async function loadModel(model_path) { // Only cache the model if character=null
     };
 
     // Hit boxes
-    for(const body_part in HITBOXES)
-    {
-        const bone = vrm.humanoid.getNormalizedBoneNode(HITBOXES[body_part]["bone"])
-        if (bone !== null) {
-            const position = new THREE.Vector3();
-            position.setFromMatrixPosition(bone.matrixWorld);
-            console.debug(DEBUG_PREFIX,"Creating hitbox for",body_part,"at",position);
+    if (extension_settings.vrm.hitboxes) {
+        for(const body_part in HITBOXES)
+        {
+            const bone = vrm.humanoid.getNormalizedBoneNode(HITBOXES[body_part]["bone"])
+            if (bone !== null) {
+                const position = new THREE.Vector3();
+                position.setFromMatrixPosition(bone.matrixWorld);
+                console.debug(DEBUG_PREFIX,"Creating hitbox for",body_part,"at",position);
 
-            const size = HITBOXES[body_part]["size"];
-            const offset = HITBOXES[body_part]["offset"];
+                const size = HITBOXES[body_part]["size"];
+                const offset = HITBOXES[body_part]["offset"];
 
-            // Collider used to detect mouse click
-            const boundingBox = new THREE.Box3(new THREE.Vector3(-size.x,-size.y,-size.z), new THREE.Vector3(size.x,size.y,size.z));
-            const dimensions = new THREE.Vector3().subVectors( boundingBox.max, boundingBox.min );
-            // make a BoxGeometry of the same size as Box3
-            const boxGeo = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
-            // move new mesh center so it's aligned with the original object
-            const matrix = new THREE.Matrix4().setPosition(dimensions.addVectors(boundingBox.min, boundingBox.max).multiplyScalar( 0.5 ));
-            boxGeo.applyMatrix4(matrix);
-            // make a mesh
-            const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
-                visible: true,
-                side: THREE.BackSide,
-                wireframe: true,
-                color:HITBOXES[body_part]["color"]
-            }));
-            collider.name = body_part;
-            if (vrm.meta?.metaVersion === '1')
-                collider.position.set(offset.x/hipsHeight,offset.y/hipsHeight,-offset.z/hipsHeight);
-            else
-                collider.position.set(-offset.x/hipsHeight,offset.y/hipsHeight,offset.z/hipsHeight);
-            // Create a offset container
-            const offset_container = new THREE.Group(); // First container to scale/position center model
-            offset_container.name = model_path+"_offsetContainer_hitbox_"+body_part;
-            offset_container.visible = true;
-            offset_container.add(collider);
-            //scene.add(offset_container)
+                // Collider used to detect mouse click
+                const boundingBox = new THREE.Box3(new THREE.Vector3(-size.x,-size.y,-size.z), new THREE.Vector3(size.x,size.y,size.z));
+                const dimensions = new THREE.Vector3().subVectors( boundingBox.max, boundingBox.min );
+                // make a BoxGeometry of the same size as Box3
+                const boxGeo = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
+                // move new mesh center so it's aligned with the original object
+                const matrix = new THREE.Matrix4().setPosition(dimensions.addVectors(boundingBox.min, boundingBox.max).multiplyScalar( 0.5 ));
+                boxGeo.applyMatrix4(matrix);
+                // make a mesh
+                const collider = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+                    visible: true,
+                    side: THREE.BackSide,
+                    wireframe: true,
+                    color:HITBOXES[body_part]["color"]
+                }));
+                collider.name = body_part;
+                if (vrm.meta?.metaVersion === '1')
+                    collider.position.set(offset.x/hipsHeight,offset.y/hipsHeight,-offset.z/hipsHeight);
+                else
+                    collider.position.set(-offset.x/hipsHeight,offset.y/hipsHeight,offset.z/hipsHeight);
+                // Create a offset container
+                const offset_container = new THREE.Group(); // First container to scale/position center model
+                offset_container.name = model_path+"_offsetContainer_hitbox_"+body_part;
+                offset_container.visible = true;
+                offset_container.add(collider);
+                //scene.add(offset_container)
 
-            //object_container.localToWorld(position);
-            //position.add(new THREE.Vector3(offset.x,offset.y,offset.z));
-            //collider.position.set(position.x,position.y,position.z);
-            //scene.add(collider);
+                //object_container.localToWorld(position);
+                //position.add(new THREE.Vector3(offset.x,offset.y,offset.z));
+                //collider.position.set(position.x,position.y,position.z);
+                //scene.add(collider);
 
-            model["hitboxes"][body_part] = {
-                "offsetContainer":offset_container,
-                "collider":collider
+                model["hitboxes"][body_part] = {
+                    "offsetContainer":offset_container,
+                    "collider":collider
+                }
             }
         }
     }
@@ -550,7 +566,7 @@ async function loadAnimation(vrm, hipsHeight, motion_file_path) {
     catch(error) {
         //console.debug(DEBUG_PREFIX,"Something went wrong when loading animation file:",motion_file_path);
         toastr.error('Wrong animation file format:'+motion_file_path, DEBUG_PREFIX + ' cannot play animation', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-        return;
+        return null;
     }
     return clip;
 }
@@ -602,7 +618,7 @@ async function setMotion(character, motion_file_path, loop=false, force=false, r
         else {
             clip = await loadAnimation(vrm, hipsHeight, motion_file_path);
 
-            if (clip === undefined) {
+            if (clip === null) {
                 return;
             }
 

@@ -35,6 +35,7 @@ export {
     onEnabledClick,
     onFollowCameraClick,
     onTtsLipsSyncClick,
+    onHitboxesClick,
     onAutoSendHitboxMessageClick,
     onModelCacheClick,
     onAnimationCacheClick,
@@ -75,6 +76,8 @@ async function onEnabledClick() {
     saveSettingsDebounced();
 
     await loadScene();
+    if(extension_settings.vrm.enabled)
+        await loadAllModels(currentChatMembers());
 }
 
 async function onFollowCameraClick() {
@@ -85,6 +88,14 @@ async function onFollowCameraClick() {
 async function onTtsLipsSyncClick() {
     extension_settings.vrm.tts_lips_sync = $('#vrm_tts_lips_sync_checkbox').is(':checked');
     saveSettingsDebounced();
+}
+
+async function onHitboxesClick() {
+    extension_settings.vrm.hitboxes = $('#vrm_hitboxes_checkbox').is(':checked');
+    saveSettingsDebounced();
+    clearModelCache();
+    if(extension_settings.vrm.enabled)
+        await loadAllModels(currentChatMembers());
 }
 
 async function onAutoSendHitboxMessageClick() {

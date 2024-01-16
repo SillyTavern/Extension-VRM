@@ -41,12 +41,16 @@ DONE:
     - keep vrm model previously loaded for instant switch between models
     - no duplicate model possible if on
 - Control box follow animation
-- Hit box ui / click detection / message sent
+- Hit boxes
+    - click detection
+    - expression/motion/message mapping ui
+    - default to no change if set to none
+    - disabled by default, enable checkbox in ui
 - Light control
+
 
 TODO:
     v1.0:
-        - default hit box to no change / offset hipheight multiply?
         - check normalization of audio for lip sync
     v2.0:
         - blink smooth and adapt to current expression?
@@ -84,6 +88,7 @@ import {
     onFollowCameraClick,
     onTtsLipsSyncClick,
     onAutoSendHitboxMessageClick,
+    onHitboxesClick,
     onModelCacheClick,
     onAnimationCacheClick,
     onLightChange,
@@ -125,6 +130,7 @@ const defaultSettings = {
     auto_send_hitbox_message: false,
 
     // Performances
+    hitboxes: false,
     models_cache: false,
     animations_cache: false,
 
@@ -163,6 +169,7 @@ function loadSettings() {
     $('#vrm_follow_camera_checkbox').prop('checked', extension_settings.vrm.follow_camera);
     $('#vrm_tts_lips_sync_checkbox').prop('checked', extension_settings.vrm.tts_lips_sync);
     $('#vrm_auto_send_hitbox_message_checkbox').prop('checked', extension_settings.vrm.auto_send_hitbox_message);
+    $('#vrm_hitboxes_checkbox').prop('checked', extension_settings.vrm.hitboxes);
     $('#vrm_models_cache_checkbox').prop('checked', extension_settings.vrm.models_cache);
     $('#vrm_animations_cache_checkbox').prop('checked', extension_settings.vrm.animations_cache);
     $('#vrm_show_grid_checkbox').prop('checked', extension_settings.vrm.show_grid);
@@ -251,6 +258,7 @@ jQuery(async () => {
     $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
     $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
     $('#vrm_auto_send_hitbox_message_checkbox').on('click', onAutoSendHitboxMessageClick);
+    $('#vrm_hitboxes_checkbox').on('click', onHitboxesClick);
     $('#vrm_models_cache_checkbox').on('click', onModelCacheClick);
     $('#vrm_animations_cache_checkbox').on('click', onAnimationCacheClick);
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
