@@ -28,6 +28,9 @@ DONE:
 - Error message for wrong animation files
 - cache animation files
 - tts lip sync
+    - xtts compatible (not streaming mode)
+    - RVC compatible
+    - created and delete on tts_audio play/pause/end
 - animation cache
     - optional
     - model specific
@@ -43,6 +46,7 @@ DONE:
 
 TODO:
     v1.0:
+        - default hit box to no change / offset hipheight multiply?
         - check normalization of audio for lip sync
     v2.0:
         - blink smooth and adapt to current expression?

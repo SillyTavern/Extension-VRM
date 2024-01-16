@@ -60,6 +60,7 @@ let current_avatars = {} // contain loaded avatar variables
 // Caches
 let models_cache = {};
 let animations_cache = {};
+let tts_lips_sync_job_id = 0;
 
 // 3D Scene
 let renderer = undefined;
@@ -827,10 +828,11 @@ function clearAnimationCache() {
 
 // Perform audio lip sync
 // Overried text mouth movement
-async function audioTalk(response, character) {
+async function audioTalk(blob, character) {
     // Option disable
     if (!extension_settings.vrm.tts_lips_sync)
-        return response;
+        return;
+        /*return response;
 
     console.debug(DEBUG_PREFIX,"Received lipsync",response, character);
     let responseCopy;
@@ -839,14 +841,17 @@ async function audioTalk(response, character) {
     } catch(error) {
         console.debug(DEBUG_PREFIX,"Wrong response format received abort lip sync");
         return response;
-    }
+    }*/
+    tts_lips_sync_job_id++;
+    const job_id = tts_lips_sync_job_id;
+    console.debug(DEBUG_PREFIX,"Received lipsync",blob, character,job_id);
 
     const audioContext = new(window.AudioContext || window.webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
     analyser.smoothingTimeConstant = 0.5;
     analyser.fftSize = 1024;
 
-    const blob = await responseCopy.blob();
+    //const blob = await responseCopy.blob();
     const arrayBuffer = await blob.arrayBuffer();
 
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -858,23 +863,40 @@ async function audioTalk(response, character) {
     const javascriptNode = audioContext.createScriptProcessor(256, 1, 1);
     analyser.connect(javascriptNode);
     javascriptNode.connect(audioContext.destination);
-
-    source.onended = function() {
-        source.stop(0);
-        source.disconnect();
-        analyser.disconnect();
-        javascriptNode.disconnect();
-        if (current_avatars[character] !== undefined)
-            current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
-    }
-
     const mouththreshold = 10;
     const mouthboost = 10;
 
     let lastUpdate = 0;
     const LIPS_SYNC_DELAY = 66;
 
+    function endTalk() {
+        source.stop(0);
+        source.disconnect();
+        analyser.disconnect();
+        javascriptNode.disconnect();
+        if (current_avatars[character] !== undefined)
+            current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+
+        audio.removeEventListener("ended", endTalk);
+        //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
+    }
+
+    var audio = document.getElementById("tts_audio");
+    function startTalk() {
+        source.start(0);
+        audio.removeEventListener("onplay", startTalk);
+        //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
+    }
+    audio.onplay = startTalk;
+    audio.onended = endTalk;
+
     function onAudioProcess() {
+        if(job_id != tts_lips_sync_job_id || audio.paused) {
+            console.debug(DEBUG_PREFIX,"TTS lip sync job",job_id,"terminated")
+            endTalk();
+            return;
+        }
+
         var array = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(array);
         var values = 0;
@@ -909,14 +931,6 @@ async function audioTalk(response, character) {
     }
 
     javascriptNode.onaudioprocess = onAudioProcess;
-    
-    var audio = document.getElementById("tts_audio");
-    function startTalk() {
-        source.start(0);
-        audio.removeEventListener("onplay", startTalk);
-        //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
-    }
-    audio.onplay = startTalk;
     // TODO: restaure expression weight ?
 }
 

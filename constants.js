@@ -35,7 +35,7 @@ const VN_MODE_DIV = 'visual-novel-wrapper';
 const DEFAULT_SCALE = 3.0;
 const HIT_BOX_DELAY = 100;
 const DEFAULT_LIGHT_COLOR = "#FFFFFF";
-const DEFAULT_LIGHT_INTENSITY = 50;
+const DEFAULT_LIGHT_INTENSITY = 100;
 
 const JS_LIBS = [
 "es-module-shims.js"
