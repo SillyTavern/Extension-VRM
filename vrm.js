@@ -252,7 +252,8 @@ async function setModel(character,model_path) {
         await setMotion(character, motion, true);
     }
 
-    blink(character, modelId);
+    if (extension_settings.vrm.blink)
+        blink(character, modelId);
     textTalk(character, modelId);
     current_avatars[character]["objectContainer"].visible = true;
     current_avatars[character]["collider"].visible = extension_settings.vrm.show_grid;

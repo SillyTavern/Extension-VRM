@@ -34,6 +34,7 @@ import { exp } from './lib/jsm/nodes/Nodes.js';
 export {
     onEnabledClick,
     onFollowCameraClick,
+    onBlinkClick,
     onTtsLipsSyncClick,
     onHitboxesClick,
     onAutoSendHitboxMessageClick,
@@ -83,6 +84,13 @@ async function onEnabledClick() {
 async function onFollowCameraClick() {
     extension_settings.vrm.follow_camera = $('#vrm_follow_camera_checkbox').is(':checked');
     saveSettingsDebounced();
+}
+
+async function onBlinkClick() {
+    extension_settings.vrm.blink = $('#vrm_blink_checkbox').is(':checked');
+    saveSettingsDebounced();
+    if(extension_settings.vrm.enabled)
+        await loadAllModels(currentChatMembers());
 }
 
 async function onTtsLipsSyncClick() {

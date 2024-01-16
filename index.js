@@ -53,6 +53,7 @@ TODO:
     v1.0:
         - check normalization of audio for lip sync
     v2.0:
+        - custom color picker
         - blink smooth and adapt to current expression?
             - The expression define the blink blend can't do much for now
         - click interaction
@@ -86,6 +87,7 @@ import {
 import {
     onEnabledClick,
     onFollowCameraClick,
+    onBlinkClick,
     onTtsLipsSyncClick,
     onAutoSendHitboxMessageClick,
     onHitboxesClick,
@@ -127,6 +129,7 @@ const defaultSettings = {
     enabled: false,
     follow_camera: false,
     tts_lips_sync: false,
+    blink: false,
     auto_send_hitbox_message: false,
 
     // Performances
@@ -167,6 +170,7 @@ function loadSettings() {
 
     $('#vrm_enabled_checkbox').prop('checked', extension_settings.vrm.enabled);
     $('#vrm_follow_camera_checkbox').prop('checked', extension_settings.vrm.follow_camera);
+    $('#vrm_blink_checkbox').prop('checked', extension_settings.vrm.blink);
     $('#vrm_tts_lips_sync_checkbox').prop('checked', extension_settings.vrm.tts_lips_sync);
     $('#vrm_auto_send_hitbox_message_checkbox').prop('checked', extension_settings.vrm.auto_send_hitbox_message);
     $('#vrm_hitboxes_checkbox').prop('checked', extension_settings.vrm.hitboxes);
@@ -256,6 +260,7 @@ jQuery(async () => {
 
     $('#vrm_enabled_checkbox').on('click', onEnabledClick);
     $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
+    $('#vrm_blink_checkbox').on('click', onBlinkClick);
     $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
     $('#vrm_auto_send_hitbox_message_checkbox').on('click', onAutoSendHitboxMessageClick);
     $('#vrm_hitboxes_checkbox').on('click', onHitboxesClick);
