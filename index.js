@@ -181,6 +181,16 @@ function loadSettings() {
     $('#vrm_light_color').val(extension_settings.vrm.light_color);
     $('#vrm_light_intensity').val(extension_settings.vrm.light_intensity);
     $('#vrm_light_intensity_value').text(extension_settings.vrm.light_intensity);
+
+    $('#vrm_enabled_checkbox').on('click', onEnabledClick);
+    $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
+    $('#vrm_blink_checkbox').on('click', onBlinkClick);
+    $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
+    $('#vrm_auto_send_hitbox_message_checkbox').on('click', onAutoSendHitboxMessageClick);
+    $('#vrm_hitboxes_checkbox').on('click', onHitboxesClick);
+    $('#vrm_models_cache_checkbox').on('click', onModelCacheClick);
+    $('#vrm_animations_cache_checkbox').on('click', onAnimationCacheClick);
+    $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
     
     $('#vrm_light_color').on('input', onLightChange);
     $('#vrm_light_intensity').on('input', onLightChange);
@@ -204,6 +214,12 @@ function loadSettings() {
     $('#vrm_default_motion_select').on('change', () => {onAnimationMappingChange('animation_default');});
     $('#vrm_default_expression_replay').on('click', () => {onAnimationMappingChange('animation_default');});
     $('#vrm_default_motion_replay').on('click', () => {onAnimationMappingChange('animation_default');});
+
+    $('#vrm_reload_button').on('click', async () => {
+        await loadScene();
+        await loadAllModels(currentChatMembers());
+        console.debug(DEBUG_PREFIX,'Reset clicked, reloading VRM');
+    });
 
     eventSource.on(event_types.CHAT_CHANGED, async () => {
         updateCharactersList();
@@ -258,22 +274,7 @@ jQuery(async () => {
     $('#extensions_settings').append(windowHtml);
     loadSettings();
 
-    $('#vrm_enabled_checkbox').on('click', onEnabledClick);
-    $('#vrm_follow_camera_checkbox').on('click', onFollowCameraClick);
-    $('#vrm_blink_checkbox').on('click', onBlinkClick);
-    $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
-    $('#vrm_auto_send_hitbox_message_checkbox').on('click', onAutoSendHitboxMessageClick);
-    $('#vrm_hitboxes_checkbox').on('click', onHitboxesClick);
-    $('#vrm_models_cache_checkbox').on('click', onModelCacheClick);
-    $('#vrm_animations_cache_checkbox').on('click', onAnimationCacheClick);
-    $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
-
-    $('#vrm_reload_button').on('click', async () => {
-        await loadScene();
-        await loadAllModels(currentChatMembers());
-        console.debug(DEBUG_PREFIX,'Reset clicked, reloading VRM');
-    });
-
+    
     /*// Module worker
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
