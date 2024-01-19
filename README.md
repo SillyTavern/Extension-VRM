@@ -21,20 +21,20 @@ The VRM extension offers various settings to customize the behavior of your anim
 ### Global Settings
 
 1. **Enabled**:
-   - Enable this checkbox to activate the extension, allowing your vrm model to interact within SillyTavern.
+   - Enable this checkbox to activate the extension, allowing your VRM model to interact within SillyTavern.
    - You can disable the extension if you want to use normal sprites only.
 
 2. **Look at camera**:
-   - Enable this checkbox to make the vrm model eyes look at the camera.
+   - Enable this checkbox to make the VRM model eyes look at the camera.
 
 3. **Blink**:
-   - Enable this checkbox to make the vrm model eyes blink at random intervals. Model expressions should define properly blinking weight property otherwize model can blink with closed eyes for example, if that happens either:
+   - Enable this checkbox to make the VRM model eyes blink at random intervals. Model expressions should define properly blinking weight property otherwize model can blink with closed eyes for example, if that happens either:
     - correct the model if you have the .vroid file
     - don't use that incorrect face experession
     - disable blinking completly with this checkbox
 
 4. **TTS ip sync**
-    - Enable this checkbox to have the vrm mouth movement follow the sound of your TTS when it's played. Only work with TTS whose sound is played by Sillytavern itself like XTTS (not in streaming mode). If disabled, mouth will be animated according to the message text length when a new character message is received.
+    - Enable this checkbox to have the VRM mouth movement follow the sound of your TTS when it's played. Only work with TTS whose sound is played by Sillytavern itself like XTTS (not in streaming mode). If disabled, mouth will be animated according to the message text length when a new character message is received.
 
 5. **Auto-send Interaction**:
    - Enable this checkbox to automatically trigger character interactions when you click on areas with mapped messages (refer to the hit areas section for details).
@@ -42,10 +42,10 @@ The VRM extension offers various settings to customize the behavior of your anim
 ### Performances Settings
 
 1. **Body hitboxes**
-    - Enable this checkbox to activate detection of click on several part of the vrm model depending on the model the following area can be detected: head/chest/hands/groin/butt/legs/feets. Hitboxes location are computed at each frames and follow the body animation, disabling this option can improve performance.
+    - Enable this checkbox to activate detection of click on several part of the VRM model depending on the model the following area can be detected: head/chest/hands/groin/butt/legs/feets. Hitboxes location are computed at each frames and follow the body animation, disabling this option can improve performance.
 
 2. **Use model cache**
-    - Enable this checkbox to keep in memory vrm model when switching models, allows to switch back to previous model faster. Usefull if you use different model for the same character to change outfit or form for example. Can affect performance.
+    - Enable this checkbox to keep in memory VRM model when switching models, allows to switch back to previous model faster. Usefull if you use different model for the same character to change outfit or form for example. Can affect performance.
 
 3. **Use animation cache**
     - Enable this checkboxx to keep in memory all animations played during the session. All animation assigned to a model will also be loaded the first time the model appear. Will increase the time you load the model the first time but make all animation switch instant. Can affect performance.
@@ -56,7 +56,7 @@ The VRM extension offers various settings to customize the behavior of your anim
     - Enable this checkbox to visualize the 3d grid, model dragging box and body hitboxes.
 
 2. **Reload button**
-    - Click this button to reload the 3d scene, clear the cache and all vrm models. Use it if some bug occurs or if cache starts to hit performance.
+    - Click this button to reload the 3d scene, clear the cache and all VRM models. Use it if some bug occurs or if cache starts to hit performance.
 
 ### Scene Settings
 
@@ -72,13 +72,13 @@ The VRM extension offers various settings to customize the behavior of your anim
 
 ## Character Selection
 
-These settings allow you to manage characters and assign vrm models to them.
+These settings allow you to manage characters and assign VRM models to them.
 
 1. **Refresh Button**:
    - Click the refresh button to update the list of characters in the current chat.
 
 2. **Select Character**:
-   - Use the drop-down list to choose a character to assign a vrm model to.
+   - Use the drop-down list to choose a character to assign a VRM model to.
 
 3. **Remove Button**:
    - Click this button to delete the assigned model for a character.
@@ -86,7 +86,7 @@ These settings allow you to manage characters and assign vrm models to them.
 ## Model Selection
 
 1. **Refresh Button**:
-   - Click the refresh button if your vrm model does not appear in the list.
+   - Click the refresh button if your VRM model does not appear in the list.
 
 2. **Select Model**:
    - Choose a model from the list to assign it to the selected character.
