@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from './lib/three.module.js';
 import { saveSettingsDebounced, sendMessageAsUser } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 

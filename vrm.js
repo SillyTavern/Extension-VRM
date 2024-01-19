@@ -1,7 +1,7 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import * as THREE from './lib/three.module.js';
+import { GLTFLoader } from './lib/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from './lib/jsm/controls/OrbitControls.js';
+import { VRMLoaderPlugin, VRMUtils } from './lib/three-vrm.module.js';
 import { loadBVHAnimation, loadMixamoAnimation } from './animationLoader.js';
 
 import { getRequestHeaders, saveSettings, saveSettingsDebounced, sendMessageAsUser } from '../../../../script.js';

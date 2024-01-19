@@ -1,6 +1,6 @@
-import * as THREE from 'three';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { BVHLoader } from 'three/addons/loaders/BVHLoader.js';
+import * as THREE from './lib/three.module.js';
+import { FBXLoader } from './lib/jsm/loaders/FBXLoader.js';
+import { BVHLoader } from './lib/jsm/loaders/BVHLoader.js';
 
 import {
     DEBUG_PREFIX
