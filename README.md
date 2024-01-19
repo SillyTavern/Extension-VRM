@@ -128,14 +128,6 @@ These settings allow you to manage characters and assign VRM models to them.
 2. **Mapping**
     - For each detected emotion by the classify extension, you can assign an expression/motion/message. The message can contain commands.
 
-Thank you for following this guide! Your SillyTavern experience is now enriched with animated and interactive Live2D models.
-
-## Remarks
-    - The VRM model loaded by this extension are the .vrm files not the .vroid files.
-    - Animation files should be VRM compatible, you can use a tool like XR animation (https://github.com/ButzYung/SystemAnimatorOnline) to convert fbx/bvh animation file.
-    - Nitral has some tutorial video about how to use the extension: TODO
-    - You can create animation groups by having file with same name ending with different numbers for example: "idle1.bvh", "idle2.bhv", "idle3.bvh" will be considered as one group "idle" and when selected in a mapping a random one will played when triggered, can be use to add variety to animations.
-
 ## Commands
 
 1. **/vrmlightcolor**
@@ -207,3 +199,12 @@ If your animation file are named in the following way they will be mapped automa
     "rightLeg": "assets/vrm/animation/hitarea_leg",
     "rightFoot": "assets/vrm/animation/hitarea_foot",
     "leftFoot": "assets/vrm/animation/hitarea_foot"
+
+Thank you for following this guide! Your SillyTavern experience is now enriched with animated and interactive Live2D models.
+
+## Remarks
+    - The VRM model loaded by this extension are the .vrm files not the .vroid files.
+    - Animation files should be VRM compatible, you can use a tool like XR animation (https://github.com/ButzYung/SystemAnimatorOnline) to convert fbx/bvh animation file.
+    - You can create animation groups by having file with same name ending with different numbers for example: "idle1.bvh", "idle2.bhv", "idle3.bvh" will be considered as one group "idle" and when selected in a mapping a random one will played when triggered, can be use to add variety to animations.
+    - You can get curated animations from this repository: https://github.com/test157t/VRM-Animations-Pack-For-Silly-Tavern
+    - Nitral has some tutorial video about how to use the extension and the animation repo: TODO
