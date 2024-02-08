@@ -76,7 +76,6 @@ async function hitboxClick(character,hitbox) {
     if (model_motion != "none")
         setMotion(character, model_motion, false, true, true);
 
-    // TODO: send message
     if (message != '') {
         console.debug(DEBUG_PREFIX,getContext());
         // Same interaction as last message
@@ -155,6 +154,10 @@ async function pointerDown(event) {
 
         }
 
+        // Mouse controls disabled
+        if (extension_settings.vrm.lock_models)
+            return;
+
         if (dragCharacter === undefined)
             return;
 
@@ -189,13 +192,17 @@ async function pointerDown(event) {
 }
 
 async function pointerMove(event) {
+    // init
+    if (previousMouse === undefined || currentMouse === undefined) {
+        previousMouse = new THREE.Vector2();
+        currentMouse = new THREE.Vector2();
+    }
+    
+    // Mouse controls disabled
+    if (extension_settings.vrm.lock_models)
+        return;
+
     if (raycaster !== undefined && camera !== undefined) {
-        // init
-        if (previousMouse === undefined || currentMouse === undefined) {
-            previousMouse = new THREE.Vector2();
-            currentMouse = new THREE.Vector2();
-        }
-        
         const character = dragCharacter;
 
         // Draggin model
@@ -258,6 +265,10 @@ async function pointerMove(event) {
 }
 
 async function wheel(event) {
+    // Mouse controls disabled
+    if (extension_settings.vrm.lock_models)
+        return;
+
     //No change
     if(event.deltaY == 0)
         return;

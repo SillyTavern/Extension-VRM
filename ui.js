@@ -38,6 +38,7 @@ export {
     onTtsLipsSyncClick,
     onHitboxesClick,
     onAutoSendHitboxMessageClick,
+    onLockModelsClick,
     onModelCacheClick,
     onAnimationCacheClick,
     onLightChange,
@@ -108,6 +109,11 @@ async function onHitboxesClick() {
 
 async function onAutoSendHitboxMessageClick() {
     extension_settings.vrm.auto_send_hitbox_message = $('#vrm_auto_send_hitbox_message_checkbox').is(':checked');
+    saveSettingsDebounced();
+}
+
+async function onLockModelsClick() {
+    extension_settings.vrm.lock_models = $('#vrm_lock_models_checkbox').is(':checked');
     saveSettingsDebounced();
 }
 

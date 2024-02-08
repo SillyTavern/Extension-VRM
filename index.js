@@ -47,11 +47,12 @@ DONE:
     - default to no change if set to none
     - disabled by default, enable checkbox in ui
 - Light control
+- lock model menu option
 
 
 TODO:
     v1.0:
-        - check normalization of audio for lip sync
+        - Change default map from happy to relaxed
     v2.0:
         - custom color picker
         - blink smooth and adapt to current expression?
@@ -90,6 +91,7 @@ import {
     onBlinkClick,
     onTtsLipsSyncClick,
     onAutoSendHitboxMessageClick,
+    onLockModelsClick,
     onHitboxesClick,
     onModelCacheClick,
     onAnimationCacheClick,
@@ -131,6 +133,7 @@ const defaultSettings = {
     tts_lips_sync: false,
     blink: false,
     auto_send_hitbox_message: false,
+    lock_models: false,
 
     // Performances
     hitboxes: false,
@@ -173,6 +176,7 @@ function loadSettings() {
     $('#vrm_blink_checkbox').prop('checked', extension_settings.vrm.blink);
     $('#vrm_tts_lips_sync_checkbox').prop('checked', extension_settings.vrm.tts_lips_sync);
     $('#vrm_auto_send_hitbox_message_checkbox').prop('checked', extension_settings.vrm.auto_send_hitbox_message);
+    $('#vrm_lock_models_checkbox').prop('checked', extension_settings.vrm.lock_models);
     $('#vrm_hitboxes_checkbox').prop('checked', extension_settings.vrm.hitboxes);
     $('#vrm_models_cache_checkbox').prop('checked', extension_settings.vrm.models_cache);
     $('#vrm_animations_cache_checkbox').prop('checked', extension_settings.vrm.animations_cache);
@@ -187,6 +191,7 @@ function loadSettings() {
     $('#vrm_blink_checkbox').on('click', onBlinkClick);
     $('#vrm_tts_lips_sync_checkbox').on('click', onTtsLipsSyncClick);
     $('#vrm_auto_send_hitbox_message_checkbox').on('click', onAutoSendHitboxMessageClick);
+    $('#vrm_lock_models_checkbox').on('click', onLockModelsClick);
     $('#vrm_hitboxes_checkbox').on('click', onHitboxesClick);
     $('#vrm_models_cache_checkbox').on('click', onModelCacheClick);
     $('#vrm_animations_cache_checkbox').on('click', onAnimationCacheClick);
