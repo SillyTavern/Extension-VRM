@@ -451,7 +451,6 @@ async function loadModelUi(use_default_settings) {
         // Default loaded
         if (extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['expression'] != $(`#vrm_hitbox_expression_select_${hitbox}`).val()) {
             extension_settings.vrm.model_settings[model_path]['hitboxes_mapping'][hitbox]['expression'] = $(`#vrm_hitbox_expression_select_${hitbox}`).val();
-            console.debug(DEBUG_PREFIX,"AAAAAAAAAAAAA",$(`vrm_hitbox_expression_select_${hitbox}`).val())
             saveSettingsDebounced();
         }
         
