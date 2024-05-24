@@ -290,6 +290,8 @@ jQuery(async () => {
     registerSlashCommand('vrmmodel', setModelSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model (example: "/vrmmodel Seraphina.vrm" or "/vrmmodel character=Seraphina model=Seraphina.vrm")', true, true);
     registerSlashCommand('vrmexpression', setExpressionSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model expression (example: "/vrmexpression happy" or "/vrmexpression character=Seraphina expression=happy")', true, true);
     registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: "/vrmmotion idle" or "/vrmmotion character=Seraphina motion=idle loop=true random=false")', true, true);
+    registerSlashCommand('vrmmotionlist', MotionListSlashCommand, [], '<span class="monospace">(motion)</span> – list vrm model motions (example: "/vrmmotionlits")', true, true);
+
 });
 
 async function setLightColorSlashCommand(_, color) {
@@ -425,4 +427,14 @@ async function setMotionSlashCommand(args, motion) {
     else{
         console.debug(DEBUG_PREFIX,'Motion not found in', animations_files);
     }
+}
+
+// Example /vrmmotionlist
+async function MotionListSlashCommand(args) {
+    var animation_list = [];
+    for(const fullPath of animations_files) {
+        var filename = fullPath.replace(/^.*[\\/]/, '').replace(/\.[^/.]+$/, "")
+        animation_list.push(filename)
+    }
+    return JSON. stringify(animation_list);
 }
