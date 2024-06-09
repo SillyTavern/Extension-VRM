@@ -83,7 +83,8 @@ import {
     updateExpression,
     talk,
     setModel,
-    setLight
+    setLight,
+    setBackground
 } from "./vrm.js";
 import {
     onEnabledClick,
@@ -291,6 +292,7 @@ jQuery(async () => {
     registerSlashCommand('vrmexpression', setExpressionSlashCommand, [], '<span class="monospace">(expression)</span> – set vrm model expression (example: "/vrmexpression happy" or "/vrmexpression character=Seraphina expression=happy")', true, true);
     registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: "/vrmmotion idle" or "/vrmmotion character=Seraphina motion=idle loop=true random=false")', true, true);
     registerSlashCommand('vrmmotionlist', MotionListSlashCommand, [], '<span class="monospace">(motion)</span> – list vrm model motions (example: "/vrmmotionlits")', true, true);
+    registerSlashCommand('vrmbackground', setBackgroundSlashCommand, [], '<span class="monospace">(motion)</span> – Set the 3d background (example: "/vrmbackground /assets/vrm/scene/test.fbx or /vrmbackground path=/assets/vrm/scene/test.fbx scale=0.01 x=0 y=0 z=0 rx=0 ry=0 rz=0)', true, true);
 
 });
 
@@ -437,4 +439,41 @@ async function MotionListSlashCommand(args) {
         animation_list.push(filename)
     }
     return JSON. stringify(animation_list);
+}
+
+// Example /vrmbackground path=/assets/vrm/scene/test.fbx scale=0.01 x=0 y=0 z=0 rx=0 ry=2 rz=0
+// /vrmbackground path=/assets/vrm/scene/sitting_room/scene.gltf scale=1 x=0 y=0 z=-0.5 rx=0 ry=2 rz=0
+async function setBackgroundSlashCommand(args, path) {
+    let scale = 0.01
+    let position = {"x":0,"y":0,"z":0}
+    let rotation = {"x":0,"y":0,"z":0}
+
+    if (!path && !args["path"]) {
+        console.log('No path provided');
+        return;
+    }
+
+    if (args["path"])
+        path = args["path"]
+
+    //console.debug(DEBUG_PREFIX, "path:", path)
+
+    if (args["scale"])
+        scale = args["scale"]
+
+    if (args["x"])
+        position.x = args["x"];
+    if (args["y"])
+        position.y = args["y"];
+    if (args["z"])
+        position.z = args["z"];
+
+    if (args["rx"])
+        rotation.x = args["rx"];
+    if (args["ry"])
+        rotation.y = args["ry"];
+    if (args["rz"])
+        rotation.z = args["rz"];
+
+    setBackground(path, scale, position, rotation);
 }

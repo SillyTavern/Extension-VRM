@@ -1,5 +1,6 @@
 import * as THREE from './lib/three.module.js';
 import { GLTFLoader } from './lib/jsm/loaders/GLTFLoader.js';
+import { FBXLoader } from './lib/jsm/loaders/FBXLoader.js';
 import { OrbitControls } from './lib/jsm/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from './lib/three-vrm.module.js';
 import { loadBVHAnimation, loadMixamoAnimation } from './animationLoader.js';
@@ -48,7 +49,8 @@ export {
     VRM_CONTAINER_NAME,
     clearModelCache,
     clearAnimationCache,
-    setLight
+    setLight,
+    setBackground
 }
 
 const VRM_CONTAINER_NAME = "VRM_CONTAINER";
@@ -74,6 +76,10 @@ let modelId = 0;
 let clock = undefined;
 const lookAtTarget = new THREE.Object3D();
 
+// background
+let background = undefined;
+
+// debug
 const gridHelper = new THREE.GridHelper( 20, 20 );
 const axesHelper = new THREE.AxesHelper( 10 );
 
@@ -959,4 +965,59 @@ function setLight(color,intensity) {
 
     light.color = new THREE.Color(color);
     light.intensity = intensity/100;
+}
+
+function setBackground(scenePath, scale, position, rotation) {
+
+    if (background) {
+        scene.remove(scene.getObjectByName(background.name));
+    }
+
+    if (scenePath.endsWith(".fbx")) {
+        const fbxLoader = new FBXLoader()
+        fbxLoader.load(
+            scenePath,
+        (object) => {
+            // object.traverse(function (child) {
+            //     if ((child as THREE.Mesh).isMesh) {
+            //         // (child as THREE.Mesh).material = material
+            //         if ((child as THREE.Mesh).material) {
+            //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
+            //         }
+            //     }
+            // })
+            // object.scale.set(.01, .01, .01)
+            background = object;
+            background.scale.set(scale, scale, scale);
+            background.position.set(position.x,position.y,position.z);
+            background.rotation.set(rotation.x,rotation.y,rotation.z);
+            background.name = "background";
+            scene.add(background);
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+            console.log(error)
+        }
+        )
+    }
+
+    if (scenePath.endsWith(".gltf")) {
+        const loader = new GLTFLoader();
+
+        loader.load( scenePath, function ( gltf ) {
+
+            background = gltf.scene;
+            background.scale.set(scale, scale, scale);
+            background.position.set(position.x,position.y,position.z);
+            background.rotation.set(rotation.x,rotation.y,rotation.z);
+            scene.add(background);
+
+        }, undefined, function ( error ) {
+
+            console.error( error );
+
+        } );
+    }
 }
