@@ -207,11 +207,11 @@ async function pointerMove(event) {
 
         // Draggin model
         if (isDragging) {
-            const range = camera.position.z * Math.tan( camera.fov / 360.0 * Math.PI );
+            const range = (camera.position.z - current_avatars[character]["objectContainer"].position.z) * Math.tan( camera.fov / 360.0 * Math.PI );
             const px = ( 2.0 * event.clientX - window.innerWidth ) / window.innerHeight * range;
             const py = - ( 2.0 * event.clientY - window.innerHeight ) / window.innerHeight * range;
             const model_path = current_avatars[character]["model_path"];
-            current_avatars[character]["objectContainer"].position.set( px-mouseOffset.x, py-mouseOffset.y, 0.0 );
+            current_avatars[character]["objectContainer"].position.set( px-mouseOffset.x, py-mouseOffset.y, current_avatars[character]["objectContainer"].position.z );
 
             extension_settings.vrm.model_settings[model_path]['x'] = (current_avatars[character]["objectContainer"].position.x).toFixed(2);
             extension_settings.vrm.model_settings[model_path]['y'] = (current_avatars[character]["objectContainer"].position.y).toFixed(2);
