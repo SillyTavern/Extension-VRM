@@ -50,7 +50,8 @@ export {
     clearModelCache,
     clearAnimationCache,
     setLight,
-    setBackground
+    setBackground,
+    updateModel
 }
 
 const VRM_CONTAINER_NAME = "VRM_CONTAINER";
@@ -819,11 +820,11 @@ async function updateModel(character) {
 
         object_container.position.x = extension_settings.vrm.model_settings[model_path]['x'];
         object_container.position.y = extension_settings.vrm.model_settings[model_path]['y'];
-        object_container.position.z = 0.0; // In case somehow it get away from 0
+        object_container.position.z = extension_settings.vrm.model_settings[model_path]['z']; //0.0; // In case somehow it get away from 0
 
         object_container.rotation.x = extension_settings.vrm.model_settings[model_path]['rx'];
         object_container.rotation.y = extension_settings.vrm.model_settings[model_path]['ry'];
-        object_container.rotation.z = 0.0; // In case somehow it get away from 0
+        object_container.rotation.z = extension_settings.vrm.model_settings[model_path]['rz']; //0.0; // In case somehow it get away from 0
 
         console.debug(DEBUG_PREFIX,"Updated model:",character)
         console.debug(DEBUG_PREFIX,"Scale:",object_container.scale)

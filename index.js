@@ -84,7 +84,8 @@ import {
     talk,
     setModel,
     setLight,
-    setBackground
+    setBackground,
+    updateModel
 } from "./vrm.js";
 import {
     onEnabledClick,
@@ -293,7 +294,8 @@ jQuery(async () => {
     registerSlashCommand('vrmmotion', setMotionSlashCommand, [], '<span class="monospace">(motion)</span> – set vrm model motion (example: "/vrmmotion idle" or "/vrmmotion character=Seraphina motion=idle loop=true random=false")', true, true);
     registerSlashCommand('vrmmotionlist', MotionListSlashCommand, [], '<span class="monospace">(motion)</span> – list vrm model motions (example: "/vrmmotionlits")', true, true);
     registerSlashCommand('vrmbackground', setBackgroundSlashCommand, [], '<span class="monospace">(motion)</span> – Set the 3d background (example: "/vrmbackground /assets/vrm/scene/test.fbx or /vrmbackground path=/assets/vrm/scene/test.fbx scale=0.01 x=0 y=0 z=0 rx=0 ry=0 rz=0)', true, true);
-
+    registerSlashCommand('vrmmodelsettings', setModelSettingsSlashCommand, [], '<span class="monospace">(motion)</span> – Set the 3d background (example: "/vrmmodelsettings character=Seraphina scale=1 x=0 y=0 z=0 rx=0 ry=0 rz=0)', true, true);
+    
 });
 
 async function setLightColorSlashCommand(_, color) {
@@ -444,8 +446,8 @@ async function MotionListSlashCommand(args) {
 // Example /vrmbackground path=/assets/vrm/scene/test.fbx scale=0.01 x=0 y=0 z=0 rx=0 ry=2 rz=0
 // /vrmbackground path=/assets/vrm/scene/sitting_room/scene.gltf scale=1 x=0 y=0 z=-0.5 rx=0 ry=2 rz=0
 async function setBackgroundSlashCommand(args, path) {
-    let scale = 0.01
-    let position = {"x":0,"y":0,"z":0}
+    let scale = 1 // same as character is good
+    let position = {"x":0,"y":0,"z":0} // z is -2 times scale
     let rotation = {"x":0,"y":0,"z":0}
 
     if (!path && !args["path"]) {
@@ -476,4 +478,45 @@ async function setBackgroundSlashCommand(args, path) {
         rotation.z = args["rz"];
 
     setBackground(path, scale, position, rotation);
+}
+
+async function setModelSettingsSlashCommand(args) {
+    let character = undefined;
+    let scale = 1;
+    let position = {"x":0,"y":0,"z":0};
+    let rotation = {"x":0,"y":0,"z":0};
+
+    if(args["character"])
+        character = args["character"];
+    else
+        character = currentChatMembers()[0];
+
+    if (args["scale"])
+        scale = args["scale"];
+
+    if (args["x"])
+        position.x = args["x"];
+    if (args["y"])
+        position.y = args["y"];
+    if (args["z"])
+        position.z = args["z"];
+
+    if (args["rx"])
+        rotation.x = args["rx"];
+    if (args["ry"])
+        rotation.y = args["ry"];
+    if (args["rz"])
+        rotation.z = args["rz"];
+
+    
+    const model_path = extension_settings.vrm.character_model_mapping[character];
+    extension_settings.vrm.model_settings[model_path]['scale'] = scale;
+    extension_settings.vrm.model_settings[model_path]['x'] = position.x;
+    extension_settings.vrm.model_settings[model_path]['y'] = position.y;
+    extension_settings.vrm.model_settings[model_path]['z'] = position.z;
+    extension_settings.vrm.model_settings[model_path]['rx'] = rotation.x;
+    extension_settings.vrm.model_settings[model_path]['ry'] = rotation.y;
+    extension_settings.vrm.model_settings[model_path]['rz'] = rotation.z;
+
+    updateModel(character);
 }
