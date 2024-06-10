@@ -50,8 +50,7 @@ export {
     clearModelCache,
     clearAnimationCache,
     setLight,
-    setBackground,
-    updateModel
+    setBackground
 }
 
 const VRM_CONTAINER_NAME = "VRM_CONTAINER";
