@@ -68,7 +68,7 @@ import { eventSource, event_types, getCharacters, saveSettings, saveSettingsDebo
 import { extension_settings, getContext, ModuleWorkerWrapper } from "../../../extensions.js";
 import { registerSlashCommand } from '../../../slash-commands.js';
 export { MODULE_NAME };
-import { 
+import {
     MODULE_NAME,
     DEBUG_PREFIX,
     VRM_CANVAS_ID,
@@ -198,7 +198,7 @@ function loadSettings() {
     $('#vrm_models_cache_checkbox').on('click', onModelCacheClick);
     $('#vrm_animations_cache_checkbox').on('click', onAnimationCacheClick);
     $('#vrm_show_grid_checkbox').on('click', onShowGridClick);
-    
+
     $('#vrm_light_color').on('input', onLightChange);
     $('#vrm_light_intensity').on('input', onLightChange);
     $('#vrm_light_color_reset_button').on('click', onLightColorResetClick);
@@ -210,7 +210,7 @@ function loadSettings() {
     $('#vrm_model_refresh_button').on('click', onModelRefreshClick);
     $('#vrm_model_select').on('change', onModelChange);
     $('#vrm_model_reset_button').on('click', onModelResetClick);
-    
+
     $('#vrm_model_scale').on('input', onModelScaleChange);
     $('#vrm_model_position_x').on('input', onModelPositionChange);
     $('#vrm_model_position_y').on('input', onModelPositionChange);
@@ -266,7 +266,7 @@ function loadSettings() {
 
 /*
 async function moduleWorker() {
-    
+
 }
 */
 
@@ -277,11 +277,12 @@ async function moduleWorker() {
 // This function is called when the extension is loaded
 jQuery(async () => {
     const windowHtml = $(await $.get(`${extensionFolderPath}/window.html`));
+    const getContainer = () => $(document.getElementById('vrm_container') ?? document.getElementById('extensions_settings'));
 
-    $('#extensions_settings').append(windowHtml);
+    getContainer().append(windowHtml);
     loadSettings();
 
-    
+
     /*// Module worker
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
@@ -295,7 +296,7 @@ jQuery(async () => {
     registerSlashCommand('vrmmotionlist', MotionListSlashCommand, [], '<span class="monospace">(motion)</span> – list vrm model motions (example: "/vrmmotionlits")', true, true);
     registerSlashCommand('vrmbackground', setBackgroundSlashCommand, [], '<span class="monospace">(motion)</span> – Set the 3d background (example: "/vrmbackground /assets/vrm/scene/test.fbx or /vrmbackground path=/assets/vrm/scene/test.fbx scale=0.01 x=0 y=0 z=0 rx=0 ry=0 rz=0)', true, true);
     registerSlashCommand('vrmmodelsettings', setModelSettingsSlashCommand, [], '<span class="monospace">(motion)</span> – Set the 3d background (example: "/vrmmodelsettings character=Seraphina scale=1 x=0 y=0 z=0 rx=0 ry=0 rz=0)', true, true);
-    
+
 });
 
 async function setLightColorSlashCommand(_, color) {
@@ -419,7 +420,7 @@ async function setMotionSlashCommand(args, motion) {
 
     motion = motion.trim();
     console.debug(DEBUG_PREFIX,'Command motion received for character=',character,"motion=", motion,"loop=",loop, "random=",random);
-    
+
     const fuse = new Fuse(animations_files);
     const results = fuse.search(motion);
     const fileItem = results[0]?.item;
@@ -508,7 +509,7 @@ async function setModelSettingsSlashCommand(args) {
     if (args["rz"])
         rotation.z = args["rz"];
 
-    
+
     const model_path = extension_settings.vrm.character_model_mapping[character];
     extension_settings.vrm.model_settings[model_path]['scale'] = scale;
     extension_settings.vrm.model_settings[model_path]['x'] = position.x;
