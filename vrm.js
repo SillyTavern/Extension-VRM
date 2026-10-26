@@ -904,20 +904,42 @@ async function audioTalk(blob, character) {
     let lastUpdate = 0;
     const LIPS_SYNC_DELAY = 66;
 
+    // SillyTavern calls this before it sets the audio source and starts playing,
+    // so until playback starts, a paused audio element means "not started yet".
+    let started = false;
+
+    // Expressions are softened while talking so the mouth can move, then restored
+    const SPEAKING_EXPRESSION_WEIGHT = 0.5;
+    const expressions_before_talk = {};
+    if (current_avatars[character] !== undefined)
+        for (const expression of ["happy", "angry", "sad", "relaxed", "surprised", "neutral"])
+            expressions_before_talk[expression] = current_avatars[character]["vrm"].expressionManager.getValue(expression) ?? 0;
+
     function endTalk() {
-        source.stop(0);
+        if (started)
+            source.stop(0);
         source.disconnect();
         analyser.disconnect();
         javascriptNode.disconnect();
-        if (current_avatars[character] !== undefined)
+        if (current_avatars[character] !== undefined) {
             current_avatars[character]["vrm"].expressionManager.setValue("aa", 0);
+            // Restore the expression, unless a newer reply has taken over
+            if (started && job_id == tts_lips_sync_job_id)
+                for (const [expression, value] of Object.entries(expressions_before_talk))
+                    current_avatars[character]["vrm"].expressionManager.setValue(expression, value);
+        }
 
         audio.removeEventListener("ended", endTalk);
+        if (audioContext.state !== "closed")
+            audioContext.close();
         //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
     }
 
     var audio = document.getElementById("tts_audio");
     function startTalk() {
+        if (started)
+            return;
+        started = true;
         source.start(0);
         audio.removeEventListener("onplay", startTalk);
         //javascriptNode.removeEventListener("onaudioprocess", onAudioProcess);
@@ -926,6 +948,10 @@ async function audioTalk(blob, character) {
     audio.onended = endTalk;
 
     function onAudioProcess() {
+        // Waiting for playback to start
+        if (!started && job_id == tts_lips_sync_job_id)
+            return;
+
         if(job_id != tts_lips_sync_job_id || audio.paused) {
             console.debug(DEBUG_PREFIX,"TTS lip sync job",job_id,"terminated")
             endTalk();
@@ -951,7 +977,7 @@ async function audioTalk(blob, character) {
             if (current_avatars[character] !== undefined) {
                 // Neutralize all expression in case setExpression called in parrallele
                 for(const expression in current_avatars[character]["vrm"].expressionManager.expressionMap)
-                    current_avatars[character]["vrm"].expressionManager.setValue(expression, Math.min(0.25, current_avatars[character]["vrm"].expressionManager.getValue(expression)));
+                    current_avatars[character]["vrm"].expressionManager.setValue(expression, Math.min(expression in expressions_before_talk ? SPEAKING_EXPRESSION_WEIGHT : 0.25, current_avatars[character]["vrm"].expressionManager.getValue(expression)));
 
                 if (inputvolume > (mouththreshold * 2)) {
                     const new_value = ((average - vowelmin) / voweldamp) * (mouthboost/10);
